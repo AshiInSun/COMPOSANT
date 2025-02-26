@@ -8,6 +8,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
+import fr.sorbonne_u.cps.mapreduce.endpoints.POJOContentNodeCompositeEndPoint;
+
 import java.util.HashMap;
 import java.util.AbstractMap;
 import java.util.Map;
@@ -17,69 +19,78 @@ public class Node implements ContentAccessSyncI, MapReduceSyncI {
 	
 	private int debut, fin;
 	private Map<ContentKeyI, ContentDataI > table;
-	private Node suiv;
 	private Map<String, Map<ContentKeyI, Serializable>> mapResults;
+	private boolean visite;
+	POJOContentNodeCompositeEndPoint edp_client;
+	POJOContentNodeCompositeEndPoint edp_server;
 	
-	public Node(int debut, int fin, Node node) {
+	
+	public Node(int debut, int fin, POJOContentNodeCompositeEndPoint edp_server) {
 		this.debut = debut;
 		this.fin   = fin;
 		this.table = new HashMap<>();
-		this.suiv = node;
 		this.mapResults = new HashMap<>();
-	}
-	
-	public Node(int debut, int fin) {
-		this.debut = debut;
-		this.fin   = fin;
-		this.table = new HashMap<>();
-		this.suiv = this;
-		this.mapResults = new HashMap<>();
+		this.visite = false;
+		
+		this.edp_client = new POJOContentNodeCompositeEndPoint();
+		this.edp_client.initialiseServerSide(this);
+		
+		if (edp_server != null) {
+			this.edp_server = edp_server;
+			this.edp_server.initialiseClientSide(this.edp_server);
+		}
 	}
 	
 	@Override
 	public ContentDataI getSync(String computationURI, ContentKeyI key) throws Exception {	
 		int h = key.hashCode();
+		
 		if ( debut <= h && h <= fin ) {
 			return table.get(key);
 		}
 		else {
-			if (suiv.getDebut() == 0)
-				return null;		
-			return suiv.getSync(null, key);
+			if (this.visite)
+				return null;	
+			
+			this.visite = true;
+			return this.edp_server.getContentAccessEndpoint().getClientSideReference().getSync(computationURI, key);
 		}
 	}
 
 	@Override
 	public ContentDataI putSync(String computationURI, ContentKeyI key, ContentDataI value) throws Exception {
 		int h = key.hashCode();
+		
 		if ( debut <= h && h <= fin ) {
 			ContentDataI prev_value = table.get(key);
 			table.put(key, value);
 			return prev_value;
 		}
 		else {
-			if (suiv.getDebut() == 0)
+			if (this.visite)
 				return null;
 			
 			// Temporaire, juste pour les tests
 			System.out.println("On est passé au noeud suivant avec la clef " + ((ContentKey) key).getKey() + " qui a comme hash: " + h +"\n");
 			
-			return suiv.putSync(null, key, value);
+			this.visite = true;
+			return this.edp_server.getContentAccessEndpoint().getClientSideReference().putSync(computationURI, key, value);
 		}
 	}
 
 	@Override
 	public ContentDataI removeSync(String computationURI, ContentKeyI key) throws Exception {
 		int h = key.hashCode();
+		
 		if ( debut <= h && h <= fin ) {
 			ContentDataI prev_value = table.get(key);
 			table.remove(key);
 			return prev_value;
 		}
 		else {
-			if (suiv.getDebut() == 0)
+			if (this.visite)
 				return null;		
-			return suiv.removeSync(null, key);
+			return this.edp_server.getContentAccessEndpoint().getClientSideReference().removeSync(computationURI, key);
 		}
 	}
 	
@@ -92,8 +103,10 @@ public class Node implements ContentAccessSyncI, MapReduceSyncI {
 
 	@Override
 	public void clearComputation(String computationURI) throws Exception {
-		// A FAIRE SI : 
-		// On a besoin de clean des artefacts derrière nous
+		if (this.visite) {
+			this.visite = false;
+			this.edp_server.getContentAccessEndpoint().getClientSideReference().clearComputation(computationURI);
+		}
 	}
 	
 	@Override
@@ -129,17 +142,19 @@ public class Node implements ContentAccessSyncI, MapReduceSyncI {
 		return res;
 	}
 	
+	// Renvoi l'endpoint client du prochain noeud
+	public POJOContentNodeCompositeEndPoint getNext() throws Exception {
+		Node nextNode = (Node) this.edp_server.getContentAccessEndpoint().getClientSideReference();
+		return nextNode.edp_client;
+	}	
+	
 	public int getDebut() {
 		return this.debut;
 	}
 	
-	public Node getSuiv() {
-		return this.suiv;
-	}
-	
-	public void setSuiv(Node newSuiv) {
-		this.suiv = newSuiv;
-		return;
+	public void setServer(POJOContentNodeCompositeEndPoint edp_server) {
+	    this.edp_server = edp_server;
+	    this.edp_server.initialiseClientSide(this.edp_server);
 	}
 	
 

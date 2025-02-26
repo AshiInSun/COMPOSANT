@@ -6,10 +6,20 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 
 public class Client {
+	private final static String NOM = "NOM";
+	private static final String AGE = "AGE";
+	
 	public static void main(String[] args) {
        try { 
+    	   
+    	   // TODO: enlever node suivant de node
+    	   Node node2 = new Node(100, 199, null);
+    	   Node node1 = new Node(0, 99, node2.edp_client);  	   
+    	   
+    	   node2.setServer(node1.edp_client);
+    	   
 	        // Initialisation de la façade
-	        Facade facade = new Facade(2);
+	        Facade facade = new Facade(node1);
 	
 	        // Création de Personnes et de leur clef associée
 	        ContentKeyI k1 = new ContentKey("123");
@@ -33,13 +43,13 @@ public class Client {
 	        System.out.println("Récupération des données...");
 	        
 	        ContentDataI result1 = facade.get(k1);
-	        System.out.println("Donnée pour k1: " + result1.getValue("NOM") + ", " + result1.getValue("AGE"));
+	        System.out.println("Donnée pour k1: " + result1.getValue(NOM) + ", " + result1.getValue(AGE));
 	
 	        ContentDataI result2 = facade.get(k2);
-	        System.out.println("Donnée pour k2: " + result2.getValue("NOM") + ", " + result2.getValue("AGE"));
+	        System.out.println("Donnée pour k2: " + result2.getValue(NOM) + ", " + result2.getValue(AGE));
 	
 	        ContentDataI result3 = facade.get(k3);
-	        System.out.println("Donnée pour k3: " + result3.getValue("NOM") + ", " + result3.getValue("AGE"));
+	        System.out.println("Donnée pour k3: " + result3.getValue(NOM) + ", " + result3.getValue(AGE));
 	
 	        
 	        // Moyenne des ages avec mapReduce
@@ -47,7 +57,7 @@ public class Client {
 	        SelectorI selector = data -> true;
 	        ProcessorI<Integer> processor = data -> {
 	        	if (data instanceof Personne) {
-	        		return (Integer) data.getValue("AGE");
+	        		return (Integer) data.getValue(AGE);
 	        	}
 	        	return 0;
 	        };
@@ -63,7 +73,7 @@ public class Client {
 	        // Suppression d'une donnée
 	        System.out.println("\nSuppression de la donnée pour k2...");
 	        ContentDataI removedResult1 = facade.remove(k2);
-	        System.out.println("Donnée: " + removedResult1.getValue("NOM") + ", " + removedResult1.getValue("AGE") + " a été supprimée");
+	        System.out.println("Donnée: " + removedResult1.getValue(NOM) + ", " + removedResult1.getValue(AGE) + " a été supprimée");
 	        
 	        
 	        // Verification de la suppression
@@ -74,10 +84,11 @@ public class Client {
 	        // Remplacement d'une donnée
 	        System.out.println("\nRemplacement de la donnée pour k1...");
 	        ContentDataI replacedResult = facade.put(k4, p4);
-	        System.out.println("Donnée: " + replacedResult.getValue("NOM") + ", " + replacedResult.getValue("AGE") + " a été remplacée");
+	        System.out.println("Donnée: " + replacedResult.getValue(NOM) + ", " + replacedResult.getValue(AGE) + " a été remplacée");
 	        ContentDataI result4 = facade.get(k4);
-	        System.out.println("Donnée: " + result4.getValue("NOM") + ", " + result4.getValue("AGE") + " l'a remplacée\n");   
+	        System.out.println("Donnée: " + result4.getValue(NOM) + ", " + result4.getValue(AGE) + " l'a remplacée\n");   
 	        
+	        // Recalcule de la moyenne des ages avec mapReduce 
 	        int[] res2 = facade.mapReduce(selector, processor, reductor, combinator, initialAcc);
 	        double ageMoyen2 = (res2[1] == 0) ? 0 : (double)res2[0] / res2[1];	        
 	        System.out.println("L'age moyen apres ces modifications est: "+ ageMoyen2);
