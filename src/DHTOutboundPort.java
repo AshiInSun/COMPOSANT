@@ -10,6 +10,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 
+// TODO: Eventuellement les methodes clearComputation si on les ajoute
+
 class DHTOutboundPort extends AbstractOutboundPort implements DHTServicesCI {
     private static final long serialVersionUID = 1L;
 

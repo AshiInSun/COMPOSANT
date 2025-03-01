@@ -1,49 +1,89 @@
-import java.io.Serializable;
-
+import fr.sorbonne_u.components.AbstractComponent;
+import fr.sorbonne_u.components.exceptions.ComponentStartException;
+import fr.sorbonne_u.components.exceptions.ConnectionException;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
-import fr.sorbonne_u.cps.mapreduce.endpoints.POJOContentNodeCompositeEndPoint;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 
-import java.util.HashMap;
+import java.io.Serializable;
 import java.util.AbstractMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class NodeComponent implements ContentAccessSyncCI, MapReduceSyncCI {
-	
-	private int debut, fin;
-	private Map<ContentKeyI, ContentDataI > table;
-	private Map<String, Map<ContentKeyI, Serializable>> mapResults;
-	private boolean visite;
-	POJOContentNodeCompositeEndPoint edp_client;
-	POJOContentNodeCompositeEndPoint edp_server;
-	
-	
-	public NodeComponent(int debut, int fin, POJOContentNodeCompositeEndPoint edp_server) {
-		this.debut = debut;
-		this.fin   = fin;
-		this.table = new HashMap<>();
-		this.mapResults = new HashMap<>();
-		this.visite = false;
-		
-		this.edp_client = new POJOContentNodeCompositeEndPoint();
-		this.edp_client.initialiseServerSide(this);
-		
-		if (edp_server != null) {
-			this.edp_server = edp_server;
-			this.edp_server.initialiseClientSide(this.edp_server);
-		}
-	}
-	
-	@Override
+// TODO: corriger les erreurs 
+
+public class NodeComponent extends AbstractComponent implements ContentAccessSyncCI, MapReduceSyncCI {
+
+    private final int debut, fin;
+    private final Map<ContentKeyI, ContentDataI> table;
+    private Map<String, Map<ContentKeyI, Serializable>> mapResults;
+    private boolean visite;
+    private final DHTInboundPort inboundPort;
+    private final DHTOutboundPort outboundPort;
+
+    public NodeComponent(int debut, int fin, String inboundURI, String outboundURI) throws Exception {
+        super(1, 0);
+
+        this.debut = debut;
+        this.fin = fin;
+        this.table = new HashMap<>();
+        this.mapResults = new HashMap<>();
+        this.visite = false;
+
+        // Création des ports d’entrée et de sortie pour la communication BCM
+        this.inboundPort = new DHTInboundPort(inboundURI, this);
+        this.outboundPort = new DHTOutboundPort(outboundURI, this);
+
+        // Publication des ports
+        this.inboundPort.publishPort();
+        this.outboundPort.publishPort();
+
+        // Traces pour observer le cycle de vie
+        this.traceMessage("NodeComponent initialisé avec les ports : " + inboundURI + " / " + outboundURI);
+    }
+
+    @Override
+    public void start() throws ComponentStartException {
+        super.start();
+        this.traceMessage("NodeComponent démarré.");
+    }
+
+    @Override
+    public void execute() throws Exception {
+        this.traceMessage("NodeComponent exécute ses opérations...");
+        // Faudra rajouter du code ici
+    }
+
+    @Override
+    public void finalise() throws Exception {
+        this.traceMessage("NodeComponent se termine...");
+        this.doPortDisconnection(this.outboundPort.getPortURI());
+        super.finalise();
+    }
+
+    @Override
+    public void shutdown() throws Exception {
+        this.inboundPort.unpublishPort();
+        this.outboundPort.unpublishPort();
+        super.shutdown();
+    }
+
+    public String getInboundPortURI() throws Exception {
+        return this.inboundPort.getPortURI();
+    }
+
+    public String getOutboundPortURI() throws Exception {
+        return this.outboundPort.getPortURI();
+    }
+    
+    @Override
 	public ContentDataI getSync(String computationURI, ContentKeyI key) throws Exception {	
 		int h = key.hashCode();
 		
@@ -55,7 +95,7 @@ public class NodeComponent implements ContentAccessSyncCI, MapReduceSyncCI {
 				return null;	
 			
 			this.visite = true;
-			return this.edp_server.getContentAccessEndpoint().getClientSideReference().getSync(computationURI, key);
+			return this.outboundPort.get(key);
 		}
 	}
 
@@ -64,19 +104,14 @@ public class NodeComponent implements ContentAccessSyncCI, MapReduceSyncCI {
 		int h = key.hashCode();
 		
 		if ( debut <= h && h <= fin ) {
-			ContentDataI prev_value = table.get(key);
-			table.put(key, value);
-			return prev_value;
+			return table.put(key, value);
 		}
 		else {
 			if (this.visite)
 				return null;
 			
-			// Temporaire, juste pour les tests
-			System.out.println("On est passé au noeud suivant avec la clef " + ((ContentKey) key).getKey() + " qui a comme hash: " + h +"\n");
-			
 			this.visite = true;
-			return this.edp_server.getContentAccessEndpoint().getClientSideReference().putSync(computationURI, key, value);
+			return this.outboundPort.put(key, value);
 		}
 	}
 
@@ -85,14 +120,13 @@ public class NodeComponent implements ContentAccessSyncCI, MapReduceSyncCI {
 		int h = key.hashCode();
 		
 		if ( debut <= h && h <= fin ) {
-			ContentDataI prev_value = table.get(key);
-			table.remove(key);
-			return prev_value;
+			return table.remove(key);
 		}
 		else {
 			if (this.visite)
-				return null;		
-			return this.edp_server.getContentAccessEndpoint().getClientSideReference().removeSync(computationURI, key);
+				return null;
+			
+			return this.outboundPort.remove(key);
 		}
 	}
 	
@@ -104,10 +138,16 @@ public class NodeComponent implements ContentAccessSyncCI, MapReduceSyncCI {
 	}
 
 	@Override
+	// NOTE: Faudra modifier la facon de faire quand on passera en multi-threading ( on utilisera le computationURI avec une hashmap IG )
 	public void clearComputation(String computationURI) throws Exception {
 		if (this.visite) {
 			this.visite = false;
-			this.edp_server.getContentAccessEndpoint().getClientSideReference().clearComputation(computationURI);
+			
+			// Probleme: outboundPort n'a pas de methode clearComputation, solution temporaire -> rajouter cette methode
+			//           dans HDTOutboundPort et dans DHTConnector			
+			// 			 Ou sinon il faut trouver un moyen de clearComputation sans passer au noeud suivant, peut etre que
+			//           la solution est offerte grace a certaines classes/methode de BCM
+			this.outboundPort.clearComputation(computationURI);
 		}
 	}
 	
@@ -143,21 +183,4 @@ public class NodeComponent implements ContentAccessSyncCI, MapReduceSyncCI {
 
 		return res;
 	}
-	
-	// Renvoi l'endpoint client du prochain noeud
-	public POJOContentNodeCompositeEndPoint getNext() throws Exception {
-		NodeComponent nextNode = (NodeComponent) this.edp_server.getContentAccessEndpoint().getClientSideReference();
-		return nextNode.edp_client;
-	}	
-	
-	public int getDebut() {
-		return this.debut;
-	}
-	
-	public void setServer(POJOContentNodeCompositeEndPoint edp_server) {
-	    this.edp_server = edp_server;
-	    this.edp_server.initialiseClientSide(this.edp_server);
-	}
-	
-
 }
