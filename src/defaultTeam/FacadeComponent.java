@@ -1,39 +1,32 @@
 package defaultTeam;
 import java.io.Serializable;
 
-import defaultTeam.port.DHTServiceInboundPort;
-import defaultTeam.port.DHTServiceOutboundPort;
+import defaultTeam.port.DHTContentAccessConnector;
+import defaultTeam.port.DHTMapReduceConnector;
+import defaultTeam.port.DHTServiceConnector;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
-import fr.sorbonne_u.components.exceptions.ConnectionException;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
-import fr.sorbonne_u.cps.mapreduce.endpoints.POJOContentNodeCompositeEndPoint;
-import fr.sorbonne_u.cps.mapreduce.utils.URIGenerator;
 
 
 public class FacadeComponent extends AbstractComponent implements DHTServicesCI {
 
-    private final DHTServiceInboundPort inboundPort;
-    private final DHTServiceOutboundPort outboundPort;
+	private BCMContentNodeCompositeEndPoint compositeEndpoint;
 
-    public FacadeComponent(String inboundURI, String outboundURI) throws Exception {
+    public FacadeComponent() throws Exception {
         super(1, 0);
 
-        this.inboundPort = new DHTServiceInboundPort(inboundURI, this);
-        this.outboundPort = new DHTServiceOutboundPort(outboundURI, this);
+        this.compositeEndpoint = new BCMContentNodeCompositeEndPoint();
 
-        this.inboundPort.publishPort();
-        this.outboundPort.publishPort();
-
-        this.traceMessage("FacadeComponent initialisé avec les ports : " + inboundURI + " / " + outboundURI);
+        this.traceMessage("FacadeComponent initialisé" );
     }
 
     @Override
@@ -50,60 +43,63 @@ public class FacadeComponent extends AbstractComponent implements DHTServicesCI 
     @Override
     public void finalise() throws Exception {
         this.traceMessage("FacadeComponent se termine...");
-        this.doPortDisconnection(this.outboundPort.getPortURI());
         super.finalise();
     }
 
     @Override
     public void shutdown() {
         try {
-			this.inboundPort.unpublishPort();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        try {
-			this.outboundPort.unpublishPort();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        try {
-			super.shutdown();
-		} catch (ComponentShutdownException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+            try {
+				compositeEndpoint.unpublishEndPoints();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+            super.shutdown();
+        } catch (ComponentShutdownException e) {
+            e.printStackTrace();
+        }
     }
+    public void connectToDHT(String firstNodeContentAccessURI, 
+            String firstNodeMapReduceURI, 
+            String firstNodeServicesURI) throws Exception {
 
-    public String getInboundPortURI() throws Exception {
-        return this.inboundPort.getPortURI();
-    }
+			this.doPortConnection(
+			compositeEndpoint.getContentAccessEndpoint().getOutboundPortURI(),
+			firstNodeContentAccessURI,
+			DHTContentAccessConnector.class.getCanonicalName());
 
-    public String getOutboundPortURI() throws Exception {
-        return this.outboundPort.getPortURI();
-    }
+			this.doPortConnection(
+			compositeEndpoint.getMapReduceEndpoint().getOutboundPortURI(),
+			firstNodeMapReduceURI,
+			DHTMapReduceConnector.class.getCanonicalName());
+			
+			this.doPortConnection(
+			compositeEndpoint.getServicesEndpoint().getOutboundPortURI(),
+			firstNodeServicesURI,
+			DHTServiceConnector.class.getCanonicalName());
+			
+			this.traceMessage("FacadeComponent connecté au premier nœud du DHT.");
+	}
 
 	@Override
 	public ContentDataI get(ContentKeyI key) throws Exception {
-		return this.outboundPort.get(key);
+		return ((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).getSync("FacadeComputation", key);
 	}
 
 	@Override
 	public ContentDataI put(ContentKeyI key, ContentDataI value) throws Exception {
-		return this.outboundPort.put(key, value);
+		return ((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).putSync("FacadeComputation", key, value);
 	}
 
 	@Override
 	public ContentDataI remove(ContentKeyI key) throws Exception {
-		return this.outboundPort.remove(key);
+		return ((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).removeSync("FacadeComputation", key);
 	}
 
 	@Override
 	public <R extends Serializable, A extends Serializable> A mapReduce(SelectorI selector, ProcessorI<R> processor,
 			ReductorI<A, R> reductor, CombinatorI<A> combinator, A initialAcc) throws Exception {
 		
-		// La methode n'est pas encore implementer dans DHTConnector, il faut la faire
-		return this.outboundPort.mapReduce(selector, processor, reductor, combinator, initialAcc);
+		return ((DHTServicesCI) compositeEndpoint.getMapReduceEndpoint()).mapReduce(selector, processor, reductor, combinator, initialAcc);
 	}
 }

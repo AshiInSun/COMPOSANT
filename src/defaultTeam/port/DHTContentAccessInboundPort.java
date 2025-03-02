@@ -25,7 +25,7 @@ public class DHTContentAccessInboundPort extends AbstractInboundPort implements 
 		SelectorI selector, 
 		ProcessorI<R> processor) throws Exception {
 		
-		((MapReduceSyncCI) this.owner).mapSync(computationURI, selector, null);
+		((MapReduceSyncCI) this.owner).mapSync(computationURI, selector, processor);
 	}
 
 	@Override

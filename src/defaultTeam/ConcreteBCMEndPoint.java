@@ -25,11 +25,12 @@ public class ConcreteBCMEndPoint<CI extends fr.sorbonne_u.components.interfaces.
 	public ConcreteBCMEndPoint(Class<CI> implementedInterface,
                                Class<? extends fr.sorbonne_u.components.interfaces.OfferedCI> serverSideOfferedInterface,
                                String inboundPortURI) {
-        super(implementedInterface, serverSideOfferedInterface, inboundPortURI, null);
+        super(implementedInterface, serverSideOfferedInterface, inboundPortURI, AbstractPort.generatePortURI(implementedInterface));
     }
 
     @Override
     protected AbstractInboundPort makeInboundPort(AbstractComponent c, String inboundPortURI) throws Exception {
+    	System.out.println("Inboundndndndnndndndndn");
 		 if(this.getServerSideInterface().equals(DHTServicesCI.class)) {
             return new DHTServiceInboundPort(inboundPortURI, c);
             
@@ -47,23 +48,22 @@ public class ConcreteBCMEndPoint<CI extends fr.sorbonne_u.components.interfaces.
     @SuppressWarnings("unchecked")
 	@Override
 	protected CI makeOutboundPort(AbstractComponent c, String outboundPortURI, String inboundPortURI) throws Exception {
+    	System.out.println("ACAAAAABEUHHHHH");
+    	
 		if (this.getClientSideInterface().equals(DHTServicesCI.class)) {
-        	String outboundPortURI1 = AbstractPort.generatePortURI(DHTServicesCI.class);
-            DHTServiceOutboundPort outboundPort = new DHTServiceOutboundPort(outboundPortURI1, c);
+            DHTServiceOutboundPort outboundPort = new DHTServiceOutboundPort(outboundPortURI, c);
             outboundPort.publishPort();
             c.doPortConnection(outboundPort.getPortURI(), inboundPortURI, DHTServiceConnector.class.getCanonicalName());
             return (CI) outboundPort;
             
 		}else if(this.getClientSideInterface().equals(ContentAccessSyncCI.class)) {
-        	String outboundPortURI1 = AbstractPort.generatePortURI(ContentAccessSyncCI.class);
-            DHTContentAccessOutboundPort outboundPort = new DHTContentAccessOutboundPort(outboundPortURI1, c);
+            DHTContentAccessOutboundPort outboundPort = new DHTContentAccessOutboundPort(outboundPortURI, c);
             outboundPort.publishPort();
             c.doPortConnection(outboundPort.getPortURI(), inboundPortURI, DHTContentAccessConnector.class.getCanonicalName());
             return (CI) outboundPort;
             
         }else if(this.getClientSideInterface().equals(MapReduceSyncCI.class)) {
-        	String outboundPortURI1 = AbstractPort.generatePortURI(MapReduceSyncCI.class);
-            DHTMapReduceOutboundPort outboundPort = new DHTMapReduceOutboundPort(outboundPortURI1, c);
+            DHTMapReduceOutboundPort outboundPort = new DHTMapReduceOutboundPort(outboundPortURI, c);
             outboundPort.publishPort();
             c.doPortConnection(outboundPort.getPortURI(), inboundPortURI, DHTMapReduceConnector.class.getCanonicalName());
             return (CI) outboundPort;

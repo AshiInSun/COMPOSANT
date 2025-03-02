@@ -3,7 +3,6 @@ import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.connectors.ConnectorI;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
-import fr.sorbonne_u.components.exceptions.ConnectionException;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
@@ -12,8 +11,6 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
-
 import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -23,10 +20,6 @@ import java.util.stream.Collectors;
 import defaultTeam.port.DHTContentAccessConnector;
 import defaultTeam.port.DHTMapReduceConnector;
 import defaultTeam.port.DHTServiceConnector;
-import defaultTeam.port.DHTServiceInboundPort;
-import defaultTeam.port.DHTServiceOutboundPort;
-
-// TODO: corriger les erreurs 
 
 public class NodeComponent extends AbstractComponent implements ContentAccessSyncCI, MapReduceSyncCI {
 
@@ -35,7 +28,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
     private Map<String, Map<ContentKeyI, Serializable>> mapResults;
     private boolean visite;
     private final BCMContentNodeCompositeEndPoint compositeEndpoint;
-
+    
     public NodeComponent(int debut, int fin) throws Exception {
         super(1, 0);
 
@@ -47,11 +40,37 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 
         // Création des ports d’entrée et de sortie pour la communication BCM
         this.compositeEndpoint = new BCMContentNodeCompositeEndPoint();
-
+        
+        this.toggleTracing();
+        this.toggleLogging();
+        
+        System.out.println("NodeComponent - Tracing activé.");
+        System.out.println("NodeComponent initialisé avec les URIs suivants :");
+        System.out.println("ContentAccess Endpoint URI : " + getContentAccessEndpointURI());
+        System.out.println("MapReduce Endpoint URI : " + getMapReduceEndpointURI());
+        System.out.println("Services Endpoint URI : " + getServicesEndpointURI());
+        
+        System.out.println(compositeEndpoint.getContentAccessEndpoint().getOutboundPortURI()) ;
+        System.out.println(compositeEndpoint.getMapReduceEndpoint().getOutboundPortURI());
+        System.out.println(compositeEndpoint.getServicesEndpoint().getOutboundPortURI()); 
+               
         // Traces pour observer le cycle de vie
         this.traceMessage("NodeComponent initialisé avec les ports");
     }
+    
+    public String getContentAccessEndpointURI() {
+        return this.compositeEndpoint.getContentAccessEndpoint().getInboundPortURI();
+    }
 
+    public String getMapReduceEndpointURI() {
+        return this.compositeEndpoint.getMapReduceEndpoint().getInboundPortURI();
+    }
+
+    public String getServicesEndpointURI() {
+        return this.compositeEndpoint.getServicesEndpoint().getInboundPortURI();
+    }
+
+    
     @Override
     public void start() throws ComponentStartException {
         super.start();
@@ -86,6 +105,14 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
     
     public void connectToNextNode(String nextNodeContentAccessURI, String nextNodeMapReduceURI, 
         String nextNodeServicesURI) throws Exception {
+    	 System.out.println("Vérification si les ports sont publiés...");
+	    System.out.println("ContentAccess Outbound Port URI : " + compositeEndpoint.getContentAccessEndpoint().getOutboundPortURI());
+	    System.out.println("MapReduce Outbound Port URI : " + compositeEndpoint.getMapReduceEndpoint().getOutboundPortURI());
+	    System.out.println("Services Outbound Port URI : " + compositeEndpoint.getServicesEndpoint().getOutboundPortURI());
+
+        if (nextNodeContentAccessURI == null || nextNodeMapReduceURI == null || nextNodeServicesURI == null) {
+            throw new Exception("Erreur : Un des URI de connexion est NULL !");
+        }
 
 		this.doPortConnection(
 				compositeEndpoint.getContentAccessEndpoint().getOutboundPortURI(),
@@ -204,6 +231,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 	        throw new IllegalStateException("Aucun résultat trouvé pour ce computationURI: " + computationURI);
 	    }
 		
+		@SuppressWarnings("unchecked")
 		A res = resultsInterm.values().stream()
 			.map(value -> (R) value) 
 			.reduce(currentAcc, reductor::apply, combinator::apply);

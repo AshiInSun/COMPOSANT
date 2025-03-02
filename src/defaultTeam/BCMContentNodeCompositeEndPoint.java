@@ -36,6 +36,7 @@ public class BCMContentNodeCompositeEndPoint extends CompositeEndPoint
                         DHTServicesCI.class,
                         DHTServicesCI.class,
                         AbstractPort.generatePortURI(DHTServicesCI.class));
+      
         this.addEndPoint(servicesEndpoint);
         
         assert complete() : new PostconditionException("complete()");
