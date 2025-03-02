@@ -11,6 +11,7 @@ import defaultTeam.port.DHTServiceOutboundPort;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.AbstractPort;
 import fr.sorbonne_u.components.ports.AbstractInboundPort;
+import fr.sorbonne_u.components.ports.AbstractOutboundPort;
 import fr.sorbonne_u.components.endpoints.BCMEndPoint;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
@@ -32,13 +33,19 @@ public class ConcreteBCMEndPoint<CI extends fr.sorbonne_u.components.interfaces.
     protected AbstractInboundPort makeInboundPort(AbstractComponent c, String inboundPortURI) throws Exception {
     	System.out.println("Inboundndndndnndndndndn");
 		 if(this.getServerSideInterface().equals(DHTServicesCI.class)) {
-            return new DHTServiceInboundPort(inboundPortURI, c);
+			 DHTServiceInboundPort inboundPort = new DHTServiceInboundPort(inboundPortURI, c);
+			 inboundPort.publishPort();
+			 return inboundPort;
             
         } else if(this.getServerSideInterface().equals(ContentAccessSyncCI.class)){
-        	return new DHTContentAccessInboundPort(inboundPortURI, c);
+	    	DHTContentAccessInboundPort inboundPort = new DHTContentAccessInboundPort(inboundPortURI, c);
+			inboundPort.publishPort();
+			return inboundPort;
         	
         }else if(this.getServerSideInterface().equals(MapReduceSyncCI.class)) {
-        	return new DHTMapReduceInboundPort(inboundPortURI, c);
+        	DHTMapReduceInboundPort inboundPort = new DHTMapReduceInboundPort(inboundPortURI, c);
+			inboundPort.publishPort();
+			return inboundPort;
         	
         }else {
             throw new IllegalArgumentException("Interface serveur inconnue : " + this.getServerSideInterface());
@@ -53,19 +60,22 @@ public class ConcreteBCMEndPoint<CI extends fr.sorbonne_u.components.interfaces.
 		if (this.getClientSideInterface().equals(DHTServicesCI.class)) {
             DHTServiceOutboundPort outboundPort = new DHTServiceOutboundPort(outboundPortURI, c);
             outboundPort.publishPort();
-            c.doPortConnection(outboundPort.getPortURI(), inboundPortURI, DHTServiceConnector.class.getCanonicalName());
-            return (CI) outboundPort;
+            DHTServiceConnector connector = new DHTServiceConnector();
+            outboundPort.doConnection(inboundPortURI, connector);
+            return  (CI) outboundPort;
             
 		}else if(this.getClientSideInterface().equals(ContentAccessSyncCI.class)) {
             DHTContentAccessOutboundPort outboundPort = new DHTContentAccessOutboundPort(outboundPortURI, c);
             outboundPort.publishPort();
-            c.doPortConnection(outboundPort.getPortURI(), inboundPortURI, DHTContentAccessConnector.class.getCanonicalName());
+            DHTContentAccessConnector connector = new DHTContentAccessConnector();
+            outboundPort.doConnection(inboundPortURI, connector);
             return (CI) outboundPort;
             
         }else if(this.getClientSideInterface().equals(MapReduceSyncCI.class)) {
             DHTMapReduceOutboundPort outboundPort = new DHTMapReduceOutboundPort(outboundPortURI, c);
             outboundPort.publishPort();
-            c.doPortConnection(outboundPort.getPortURI(), inboundPortURI, DHTMapReduceConnector.class.getCanonicalName());
+            DHTMapReduceConnector connector = new DHTMapReduceConnector();
+            outboundPort.doConnection(inboundPortURI, connector);
             return (CI) outboundPort;
             
         }else {

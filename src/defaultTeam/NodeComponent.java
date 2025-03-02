@@ -1,6 +1,5 @@
 package defaultTeam;
 import fr.sorbonne_u.components.AbstractComponent;
-import fr.sorbonne_u.components.connectors.ConnectorI;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
@@ -16,65 +15,59 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import defaultTeam.port.DHTContentAccessConnector;
-import defaultTeam.port.DHTMapReduceConnector;
-import defaultTeam.port.DHTServiceConnector;
+import java.util.stream.Stream;
 
 public class NodeComponent extends AbstractComponent implements ContentAccessSyncCI, MapReduceSyncCI {
 
     private final int debut, fin;
     private final Map<ContentKeyI, ContentDataI> table;
+    HashMap<String,Stream<ContentDataI>> streamMap;
     private Map<String, Map<ContentKeyI, Serializable>> mapResults;
     private boolean visite;
-    private final BCMContentNodeCompositeEndPoint compositeEndpoint;
+    BCMContentNodeCompositeEndPoint client_edp; //me
+    BCMContentNodeCompositeEndPoint server_edp; //the next
+    //
+    BCMContentNodeCompositeEndPoint dht_edp; //only for the first node : connexion to facade
     
-    public NodeComponent(int debut, int fin) throws Exception {
+    public NodeComponent(String uri, int debut, int fin,
+		BCMContentNodeCompositeEndPoint dht_edp,
+		BCMContentNodeCompositeEndPoint client_edp,
+		BCMContentNodeCompositeEndPoint server_edp) throws Exception {
+    	
         super(1, 0);
 
         this.debut = debut;
         this.fin = fin;
         this.table = new HashMap<>();
         this.mapResults = new HashMap<>();
+        streamMap = new HashMap<String, Stream<ContentDataI>>();
         this.visite = false;
-
-        // Création des ports d’entrée et de sortie pour la communication BCM
-        this.compositeEndpoint = new BCMContentNodeCompositeEndPoint();
+        this.client_edp = client_edp;
+        this.server_edp = server_edp;
+        if(debut==0) {
+        	this.dht_edp = dht_edp;
+        }else {
+        	this.dht_edp = dht_edp;
+        }
         
         this.toggleTracing();
         this.toggleLogging();
         
         System.out.println("NodeComponent - Tracing activé.");
         System.out.println("NodeComponent initialisé avec les URIs suivants :");
-        System.out.println("ContentAccess Endpoint URI : " + getContentAccessEndpointURI());
-        System.out.println("MapReduce Endpoint URI : " + getMapReduceEndpointURI());
-        System.out.println("Services Endpoint URI : " + getServicesEndpointURI());
         
-        System.out.println(compositeEndpoint.getContentAccessEndpoint().getOutboundPortURI()) ;
-        System.out.println(compositeEndpoint.getMapReduceEndpoint().getOutboundPortURI());
-        System.out.println(compositeEndpoint.getServicesEndpoint().getOutboundPortURI()); 
+        client_edp.initialiseServerSide(this);
+        if(debut==0) {
+        	dht_edp.initialiseServerSide(this);
+        }
                
         // Traces pour observer le cycle de vie
         this.traceMessage("NodeComponent initialisé avec les ports");
     }
-    
-    public String getContentAccessEndpointURI() {
-        return this.compositeEndpoint.getContentAccessEndpoint().getInboundPortURI();
-    }
-
-    public String getMapReduceEndpointURI() {
-        return this.compositeEndpoint.getMapReduceEndpoint().getInboundPortURI();
-    }
-
-    public String getServicesEndpointURI() {
-        return this.compositeEndpoint.getServicesEndpoint().getInboundPortURI();
-    }
-
-    
     @Override
     public void start() throws ComponentStartException {
+    	server_edp.initialiseClientSide(this);
         super.start();
-        this.traceMessage("NodeComponent démarré.");
     }
 
     @Override
@@ -85,51 +78,21 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 
     @Override
     public void finalise() throws Exception {
-        this.traceMessage("NodeComponent se termine...");
-        super.finalise();
+    	server_edp.cleanUpClientSide();
+    	super.finalise();
     }
 
     @Override
-    public void shutdown() {
-        try {
-            try {
-				compositeEndpoint.unpublishEndPoints();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-            super.shutdown();
-        } catch (ComponentShutdownException e) {
-            e.printStackTrace();
+    public void shutdown() throws ComponentShutdownException {
+        if(debut==0) {
+        	dht_edp.cleanUpServerSide();
         }
+        client_edp.cleanUpServerSide();
+        super.shutdown();
     }
     
-    public void connectToNextNode(String nextNodeContentAccessURI, String nextNodeMapReduceURI, 
-        String nextNodeServicesURI) throws Exception {
-    	 System.out.println("Vérification si les ports sont publiés...");
-	    System.out.println("ContentAccess Outbound Port URI : " + compositeEndpoint.getContentAccessEndpoint().getOutboundPortURI());
-	    System.out.println("MapReduce Outbound Port URI : " + compositeEndpoint.getMapReduceEndpoint().getOutboundPortURI());
-	    System.out.println("Services Outbound Port URI : " + compositeEndpoint.getServicesEndpoint().getOutboundPortURI());
-
-        if (nextNodeContentAccessURI == null || nextNodeMapReduceURI == null || nextNodeServicesURI == null) {
-            throw new Exception("Erreur : Un des URI de connexion est NULL !");
-        }
-
-		this.doPortConnection(
-				compositeEndpoint.getContentAccessEndpoint().getOutboundPortURI(),
-				nextNodeContentAccessURI,
-				DHTContentAccessConnector.class.getCanonicalName());
-	
-		this.doPortConnection(
-			compositeEndpoint.getMapReduceEndpoint().getOutboundPortURI(),
-			nextNodeMapReduceURI,
-			DHTMapReduceConnector.class.getCanonicalName());
-	
-		this.doPortConnection(
-			compositeEndpoint.getServicesEndpoint().getOutboundPortURI(),
-			nextNodeServicesURI,
-			DHTServiceConnector.class.getCanonicalName());
-	
-	this.traceMessage("Nœud connecté au suivant.");
+    public boolean existStream(String computationURI) {
+		return streamMap.containsKey(computationURI);
 	}
     
     @Override
@@ -144,12 +107,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 				return null;	
 			
 			this.visite = true;
-			
-			if(((ConnectorI) compositeEndpoint.getContentAccessEndpoint()).connected()) {
-				return ((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).getSync(computationURI, key);
-			}else {
-				throw new Exception("OutboundPort isn't connected.");
-			}
+			return (server_edp.getContentAccessEndpoint()).getClientSideReference().getSync(computationURI, key);
 		}
 	}
 
@@ -165,12 +123,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 				return null;
 			
 			this.visite = true;
-			
-			if(((ConnectorI) compositeEndpoint.getContentAccessEndpoint()).connected()) {
-				return ((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).putSync(computationURI, key, value);
-			}else {
-				throw new Exception("OutboundPort isn't connected.");
-			}
+			return (server_edp.getContentAccessEndpoint().getClientSideReference()).putSync(computationURI, key, value);
 		}
 	}
 
@@ -185,7 +138,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 			if (this.visite)
 				return null;
 			
-			return ((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).removeSync(computationURI, key);
+			return (server_edp.getContentAccessEndpoint().getClientSideReference()).removeSync(computationURI, key);
 		}
 	}
 	
@@ -201,7 +154,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 	public void clearComputation(String computationURI) throws Exception {
 		if (this.visite) {
 			this.visite = false;
-			((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).clearComputation(computationURI);
+			(server_edp.getContentAccessEndpoint().getClientSideReference()).clearComputation(computationURI);
 		}
 	}
 	
