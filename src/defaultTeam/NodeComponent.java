@@ -1,5 +1,6 @@
 package defaultTeam;
 import fr.sorbonne_u.components.AbstractComponent;
+import fr.sorbonne_u.components.connectors.ConnectorI;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
 import fr.sorbonne_u.components.exceptions.ConnectionException;
@@ -19,6 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import defaultTeam.port.DHTContentAccessConnector;
+import defaultTeam.port.DHTMapReduceConnector;
+import defaultTeam.port.DHTServiceConnector;
 import defaultTeam.port.DHTServiceInboundPort;
 import defaultTeam.port.DHTServiceOutboundPort;
 
@@ -30,10 +34,9 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
     private final Map<ContentKeyI, ContentDataI> table;
     private Map<String, Map<ContentKeyI, Serializable>> mapResults;
     private boolean visite;
-    private final DHTServiceInboundPort inboundPort;
-    private final DHTServiceOutboundPort outboundPort;
+    private final BCMContentNodeCompositeEndPoint compositeEndpoint;
 
-    public NodeComponent(int debut, int fin, String inboundURI, String outboundURI) throws Exception {
+    public NodeComponent(int debut, int fin) throws Exception {
         super(1, 0);
 
         this.debut = debut;
@@ -43,15 +46,10 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
         this.visite = false;
 
         // Création des ports d’entrée et de sortie pour la communication BCM
-        this.inboundPort = new DHTServiceInboundPort(inboundURI, this);
-        this.outboundPort = new DHTServiceOutboundPort(outboundURI, this);
-
-        // Publication des ports
-        this.inboundPort.publishPort();
-        this.outboundPort.publishPort();
+        this.compositeEndpoint = new BCMContentNodeCompositeEndPoint();
 
         // Traces pour observer le cycle de vie
-        this.traceMessage("NodeComponent initialisé avec les ports : " + inboundURI + " / " + outboundURI);
+        this.traceMessage("NodeComponent initialisé avec les ports");
     }
 
     @Override
@@ -69,36 +67,43 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
     @Override
     public void finalise() throws Exception {
         this.traceMessage("NodeComponent se termine...");
-        this.doPortDisconnection(this.outboundPort.getPortURI());
         super.finalise();
     }
 
     @Override
     public void shutdown() {
         try {
-			this.inboundPort.unpublishPort();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-        try {
-			this.outboundPort.unpublishPort();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-        try {
-			super.shutdown();
-		} catch (ComponentShutdownException e) {
-			e.printStackTrace();
-		}
+            try {
+				compositeEndpoint.unpublishEndPoints();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+            super.shutdown();
+        } catch (ComponentShutdownException e) {
+            e.printStackTrace();
+        }
     }
+    
+    public void connectToNextNode(String nextNodeContentAccessURI, String nextNodeMapReduceURI, 
+        String nextNodeServicesURI) throws Exception {
 
-    public String getInboundPortURI() throws Exception {
-        return this.inboundPort.getPortURI();
-    }
-
-    public String getOutboundPortURI() throws Exception {
-        return this.outboundPort.getPortURI();
-    }
+		this.doPortConnection(
+				compositeEndpoint.getContentAccessEndpoint().getOutboundPortURI(),
+				nextNodeContentAccessURI,
+				DHTContentAccessConnector.class.getCanonicalName());
+	
+		this.doPortConnection(
+			compositeEndpoint.getMapReduceEndpoint().getOutboundPortURI(),
+			nextNodeMapReduceURI,
+			DHTMapReduceConnector.class.getCanonicalName());
+	
+		this.doPortConnection(
+			compositeEndpoint.getServicesEndpoint().getOutboundPortURI(),
+			nextNodeServicesURI,
+			DHTServiceConnector.class.getCanonicalName());
+	
+	this.traceMessage("Nœud connecté au suivant.");
+	}
     
     @Override
 	public ContentDataI getSync(String computationURI, ContentKeyI key) throws Exception {	
@@ -113,8 +118,8 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 			
 			this.visite = true;
 			
-			if(this.outboundPort.connected()) {
-				return this.outboundPort.get(key);
+			if(((ConnectorI) compositeEndpoint.getContentAccessEndpoint()).connected()) {
+				return ((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).getSync(computationURI, key);
 			}else {
 				throw new Exception("OutboundPort isn't connected.");
 			}
@@ -134,8 +139,8 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 			
 			this.visite = true;
 			
-			if(this.outboundPort.connected()) {
-				return this.outboundPort.put(key, value);
+			if(((ConnectorI) compositeEndpoint.getContentAccessEndpoint()).connected()) {
+				return ((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).putSync(computationURI, key, value);
 			}else {
 				throw new Exception("OutboundPort isn't connected.");
 			}
@@ -153,7 +158,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 			if (this.visite)
 				return null;
 			
-			return this.outboundPort.remove(key);
+			return ((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).removeSync(computationURI, key);
 		}
 	}
 	
@@ -169,12 +174,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 	public void clearComputation(String computationURI) throws Exception {
 		if (this.visite) {
 			this.visite = false;
-			
-			// Probleme: outboundPort n'a pas de methode clearComputation, solution temporaire -> rajouter cette methode
-			//           dans HDTOutboundPort et dans DHTConnector			
-			// 			 Ou sinon il faut trouver un moyen de clearComputation sans passer au noeud suivant, peut etre que
-			//           la solution est offerte grace a certaines classes/methode de BCM
-			this.outboundPort.clearComputation(computationURI);
+			((ContentAccessSyncCI) compositeEndpoint.getContentAccessEndpoint()).clearComputation(computationURI);
 		}
 	}
 	

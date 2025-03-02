@@ -1,5 +1,6 @@
 package defaultTeam;
 import fr.sorbonne_u.components.endpoints.CompositeEndPoint;
+import fr.sorbonne_u.components.ports.PortI;
 import fr.sorbonne_u.components.AbstractPort;
 import fr.sorbonne_u.components.endpoints.BCMEndPoint;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.endpoints.ContentNodeBaseCompositeEndPointI;
@@ -58,5 +59,11 @@ public class BCMContentNodeCompositeEndPoint extends CompositeEndPoint
 	@Override
     public ContentNodeBaseCompositeEndPointI<ContentAccessSyncCI, MapReduceSyncCI> copyWithSharable() {
         return (ContentNodeBaseCompositeEndPointI<ContentAccessSyncCI, MapReduceSyncCI>) super.copyWithSharable();
+    }
+
+    public void unpublishEndPoints() throws Exception {
+        ((PortI) this.getContentAccessEndpoint()).unpublishPort();
+        ((PortI) this.getMapReduceEndpoint()).unpublishPort();
+        ((PortI) this.getServicesEndpoint()).unpublishPort();
     }
 }
