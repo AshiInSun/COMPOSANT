@@ -10,6 +10,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
+import fr.sorbonne_u.cps.mapreduce.endpoints.POJOContentNodeCompositeEndPoint;
+
 import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -19,7 +21,7 @@ import java.util.stream.Stream;
 
 public class NodeComponent extends AbstractComponent implements ContentAccessSyncCI, MapReduceSyncCI {
 
-    private final int debut, fin;
+    private final int debut, fin, next_deb;
     private final Map<ContentKeyI, ContentDataI> table;
     HashMap<String,Stream<ContentDataI>> streamMap;
     private Map<String, Map<ContentKeyI, Serializable>> mapResults;
@@ -29,7 +31,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
     //
     BCMContentNodeCompositeEndPoint dht_edp; //only for the first node : connexion to facade
     
-    public NodeComponent(String uri, int debut, int fin,
+    public NodeComponent(String uri, int debut, int fin, int next_deb,
 		BCMContentNodeCompositeEndPoint dht_edp,
 		BCMContentNodeCompositeEndPoint client_edp,
 		BCMContentNodeCompositeEndPoint server_edp) throws Exception {
@@ -38,6 +40,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 
         this.debut = debut;
         this.fin = fin;
+        this.next_deb = next_deb;
         this.table = new HashMap<>();
         this.mapResults = new HashMap<>();
         streamMap = new HashMap<String, Stream<ContentDataI>>();
@@ -169,6 +172,10 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                
         mapResults.put(computationURI, results);
+        
+        if (next_ind != 0) {
+        	server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
+        }
 	}
 
 	@Override
@@ -188,6 +195,10 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 		A res = resultsInterm.values().stream()
 			.map(value -> (R) value) 
 			.reduce(currentAcc, reductor::apply, combinator::apply);
+		
+		if (next_ind != 0) {
+			res = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, res)		
+		}
 
 		return res;
 	}

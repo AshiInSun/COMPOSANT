@@ -84,11 +84,14 @@ public class FacadeComponent extends AbstractComponent implements DHTServicesCI 
 			ReductorI<A, R> reductor, 
 			CombinatorI<A> combinator, 
 			A initialAcc) throws Exception {
+			
+		if (selector == null || processor == null || reductor == null || combinator == null || initialAcc == null) 
+			throw new IllegalArgumentException("Parametre(s) de mapReduce null "); 
 		
-			String computationURI = URIGenerator.generateURI();
-			server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
-			A res = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, initialAcc);
-			server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);
-			return res;
+		String computationURI = URIGenerator.generateURI("MAP_REDUCE");
+		server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
+		A res = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, initialAcc);
+		server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);
+		return res;
 	}
 }
