@@ -23,6 +23,8 @@ public class DHTCVM extends AbstractCVM {
         @SuppressWarnings({ "unchecked", "rawtypes" })
 		ConcreteBCMEndPoint<DHTServicesCI> dht_client =
         		 new ConcreteBCMEndPoint(DHTServicesCI.class, DHTServicesCI.class, uri_client);
+        
+        
         BCMContentNodeCompositeEndPoint[] endPointsNode = new BCMContentNodeCompositeEndPoint[NB_NODES];
         
         endPointsNode[0] = new BCMContentNodeCompositeEndPoint();
@@ -33,9 +35,9 @@ public class DHTCVM extends AbstractCVM {
 					NodeComponent.class.getCanonicalName(),
 					new Object[] {
 						"node"+i,
-						i, // index
-						(i+1)%NB_NODES, // next_index
-						100, //map size
+						i*100, // index
+						((i+1)*100)-1, 
+						(i+1)*100, 
 						dht_node.copyWithSharable(),
 						endPointsNode [i].copyWithSharable(),
 						endPointsNode [(i+1)%NB_NODES].copyWithSharable()

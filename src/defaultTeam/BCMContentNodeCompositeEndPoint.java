@@ -50,10 +50,4 @@ public class BCMContentNodeCompositeEndPoint extends BCMCompositeEndPoint
     public ConcreteBCMEndPoint<MapReduceSyncCI> getMapReduceEndpoint() {
         return (ConcreteBCMEndPoint<MapReduceSyncCI>) this.getEndPoint(MapReduceSyncCI.class);
     }
-    
-    @Override
-    public BCMContentNodeCompositeEndPoint copyWithSharable() {
-        BCMContentNodeCompositeEndPoint copy = new BCMContentNodeCompositeEndPoint();
-        return copy;
-    }
 }

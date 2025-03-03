@@ -48,24 +48,20 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
         this.client_edp = client_edp;
         this.server_edp = server_edp;
         if(debut==0) {
+        	System.out.println("First Node");
         	this.dht_edp = dht_edp;
         }else {
-        	this.dht_edp = dht_edp;
+        	this.dht_edp = null;
         }
         
         this.toggleTracing();
         this.toggleLogging();
         
-        System.out.println("NodeComponent - Tracing activé.");
-        System.out.println("NodeComponent initialisé avec les URIs suivants :");
-        
         client_edp.initialiseServerSide(this);
         if(debut==0) {
         	dht_edp.initialiseServerSide(this);
         }
-               
-        // Traces pour observer le cycle de vie
-        this.traceMessage("NodeComponent initialisé avec les ports");
+        System.out.println("NodeComponent initialisé.");
     }
     @Override
     public void start() throws ComponentStartException {
