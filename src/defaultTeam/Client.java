@@ -1,6 +1,7 @@
 package defaultTeam;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
+import fr.sorbonne_u.components.exceptions.ConnectionException;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
@@ -22,7 +23,11 @@ public class Client extends AbstractComponent{
 	
 	@Override
 	public synchronized void start() throws ComponentStartException{
-		dht_edp.initialiseClientSide(this);
+		try {
+			dht_edp.initialiseClientSide(this);
+		} catch (ConnectionException e) {
+			e.printStackTrace();
+		}
 		super.start();
 	}
 	

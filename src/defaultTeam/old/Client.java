@@ -1,4 +1,6 @@
 package defaultTeam.old;
+import defaultTeam.ContentKey;
+import defaultTeam.Personne;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
@@ -13,7 +15,6 @@ public class Client {
 	public static void main(String[] args) {
        try { 
     	   
-    	   // TODO: enlever node suivant de node
     	   Node node2 = new Node(100, 199, null);
     	   Node node1 = new Node(0, 99, node2.edp_client);  	   
     	   

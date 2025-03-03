@@ -2,6 +2,7 @@ package defaultTeam;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
+import fr.sorbonne_u.components.exceptions.ConnectionException;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
@@ -10,8 +11,6 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
-import fr.sorbonne_u.cps.mapreduce.endpoints.POJOContentNodeCompositeEndPoint;
-
 import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -65,7 +64,11 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
     }
     @Override
     public void start() throws ComponentStartException {
-    	server_edp.initialiseClientSide(this);
+    	try {
+			server_edp.initialiseClientSide(this);
+		} catch (ConnectionException e) {
+			e.printStackTrace();
+		}
         super.start();
     }
 
@@ -169,7 +172,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
                
         mapResults.put(computationURI, results);
         
-        if (debut != 0) {
+        if (next_deb != 0) {
         	server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
         }
 	}
@@ -192,7 +195,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 			.map(value -> (R) value) 
 			.reduce(currentAcc, reductor::apply, combinator::apply);
 		
-		if (debut != 0) {
+		if (next_deb != 0) {
 			res = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, res);
 		}
 

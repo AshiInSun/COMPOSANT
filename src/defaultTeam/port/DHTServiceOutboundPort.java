@@ -18,6 +18,10 @@ public class DHTServiceOutboundPort extends AbstractOutboundPort implements DHTS
     public DHTServiceOutboundPort(String uri, ComponentI owner) throws Exception {
         super(uri, DHTServicesCI.class, owner);
     }
+    
+    public DHTServiceOutboundPort(ComponentI owner) throws Exception {
+        super(DHTServicesCI.class, owner);
+    }
 
     @Override
     public ContentDataI get(ContentKeyI key) throws Exception {

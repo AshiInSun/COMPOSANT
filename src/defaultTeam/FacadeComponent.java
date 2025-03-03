@@ -4,6 +4,7 @@ import java.io.Serializable;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
+import fr.sorbonne_u.components.exceptions.ConnectionException;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
@@ -30,7 +31,11 @@ public class FacadeComponent extends AbstractComponent implements DHTServicesCI 
 
     @Override
     public void start() throws ComponentStartException {
-    	server_edp.initialiseClientSide(this);
+    	try {
+			server_edp.initialiseClientSide(this);
+		} catch (ConnectionException e) {
+			e.printStackTrace();
+		}
         super.start();
         this.traceMessage("FacadeComponent démarré.");
     }

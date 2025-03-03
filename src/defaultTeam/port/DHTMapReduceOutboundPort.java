@@ -17,6 +17,10 @@ public class DHTMapReduceOutboundPort extends AbstractOutboundPort implements Ma
     public DHTMapReduceOutboundPort(String uri, ComponentI owner) throws Exception {
         super(uri, DHTServicesCI.class, owner);
     }
+    
+    public DHTMapReduceOutboundPort(ComponentI owner) throws Exception {
+        super(DHTServicesCI.class, owner);
+    }
 
 	@Override
 	public <R extends Serializable> void mapSync(

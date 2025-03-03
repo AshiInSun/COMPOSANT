@@ -13,6 +13,10 @@ public class DHTContentAccessOutboundPort extends AbstractOutboundPort implement
     public DHTContentAccessOutboundPort(String uri, ComponentI owner) throws Exception {
         super(uri, DHTServicesCI.class, owner);
     }
+    
+    public DHTContentAccessOutboundPort(ComponentI owner) throws Exception {
+        super(DHTServicesCI.class, owner);
+    }
 
 	@Override
 	public ContentDataI getSync(String computationURI, ContentKeyI key) throws Exception {
