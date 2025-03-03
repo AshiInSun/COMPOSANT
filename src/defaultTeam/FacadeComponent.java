@@ -41,11 +41,6 @@ public class FacadeComponent extends AbstractComponent implements DHTServicesCI 
     }
 
     @Override
-    public void execute() throws Exception {
-        this.traceMessage("FacadeComponent exécute ses opérations...");
-    }
-
-    @Override
     public void finalise() throws Exception {
     	server_edp.cleanUpClientSide();
         this.traceMessage("FacadeComponent se termine...");

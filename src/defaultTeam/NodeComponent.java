@@ -73,12 +73,6 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
     }
 
     @Override
-    public void execute() throws Exception {
-        this.traceMessage("NodeComponent exécute ses opérations...");
-        // Faudra rajouter du code ici
-    }
-
-    @Override
     public void finalise() throws Exception {
     	server_edp.cleanUpClientSide();
     	super.finalise();
