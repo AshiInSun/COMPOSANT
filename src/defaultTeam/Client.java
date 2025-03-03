@@ -33,7 +33,7 @@ public class Client extends AbstractComponent{
 	
 	@Override
     public void execute() throws Exception {
-        this.traceMessage("Client démarre les tests...");
+        this.traceMessage("Client démarre les tests...\n");
 
         // Création de Personnes et de leur clef associée
         ContentKeyI k1 = new ContentKey("123");
@@ -47,17 +47,18 @@ public class Client extends AbstractComponent{
         //ContentDataI p4 = new Personne("Omega", 82);
 
         // Ajout des données dans la table
+        this.traceMessage("Insertion des données...\n");
         dht_edp.getClientSideReference().put(k1, p1);
         dht_edp.getClientSideReference().put(k2, p2);
         dht_edp.getClientSideReference().put(k3, p3);
 
         // Récupération des données
-        this.traceMessage("Récupération des données...");
+        this.traceMessage("Récupération des données...\n");
         ContentDataI result1 = dht_edp.getClientSideReference().get(k1);
-        this.traceMessage("Donnée pour k1: " + result1.getValue(NOM) + ", " + result1.getValue(AGE));
+        this.traceMessage("Donnée pour k1: " + result1.getValue(NOM) + ", " + result1.getValue(AGE) + "\n");
 
         // Moyenne des âges avec mapReduce
-        this.traceMessage("\nUtilisation de mapReduce pour calculer l'âge moyen");
+        this.traceMessage("\nUtilisation de mapReduce pour calculer l'âge moyen\n");
         SelectorI selector = data -> true;
         ProcessorI<Integer> processor = data -> (data instanceof Personne) ? (Integer) data.getValue(AGE) : 0;
         ReductorI<int[], Integer> reductor = (acc, age) -> new int[]{acc[0] + age, acc[1] + 1};
