@@ -6,7 +6,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 
 public class DHTCVM extends AbstractCVM {
 	
-	private static final int NB_NODES = 2; 
+	private static final int NB_NODES = 2;
+	private static final int SIZE_NODES = 100;
     public DHTCVM() throws Exception {
 		super();
 	}
@@ -35,9 +36,9 @@ public class DHTCVM extends AbstractCVM {
 					NodeComponent.class.getCanonicalName(),
 					new Object[] {
 						"node"+i,
-						i*100, // index
-						((i+1)*100)-1, 
-						(i+1)*100, 
+						i*SIZE_NODES, // index
+						((i+1)*SIZE_NODES)-1, 
+						((i+1)*SIZE_NODES)%(NB_NODES*SIZE_NODES), 
 						dht_node.copyWithSharable(),
 						endPointsNode [i].copyWithSharable(),
 						endPointsNode [(i+1)%NB_NODES].copyWithSharable()
@@ -59,6 +60,8 @@ public class DHTCVM extends AbstractCVM {
 					uri_client,
 					dht_client.copyWithSharable()
 			});
+	
+	this.toggleTracing(uri4);
     super.deploy();
     }
 
