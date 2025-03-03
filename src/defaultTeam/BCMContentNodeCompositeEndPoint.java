@@ -39,9 +39,6 @@ public class BCMContentNodeCompositeEndPoint extends BCMCompositeEndPoint
                         DHTServicesCI.class,
                         DHTServicesCI.class,
                         AbstractPort.generatePortURI(DHTServicesCI.class));
-      
-        this.addEndPoint(contentAccessEndpoint);
-        this.addEndPoint(mapReduceEndpoint);
     }
 
     @Override
@@ -52,5 +49,11 @@ public class BCMContentNodeCompositeEndPoint extends BCMCompositeEndPoint
     @Override
     public ConcreteBCMEndPoint<MapReduceSyncCI> getMapReduceEndpoint() {
         return (ConcreteBCMEndPoint<MapReduceSyncCI>) this.getEndPoint(MapReduceSyncCI.class);
+    }
+    
+    @Override
+    public BCMContentNodeCompositeEndPoint copyWithSharable() {
+        BCMContentNodeCompositeEndPoint copy = new BCMContentNodeCompositeEndPoint();
+        return copy;
     }
 }

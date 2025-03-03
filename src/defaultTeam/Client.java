@@ -1,7 +1,9 @@
 package defaultTeam;
 import fr.sorbonne_u.components.AbstractComponent;
+import fr.sorbonne_u.components.exceptions.ComponentStartException;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
@@ -10,12 +12,19 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 public class Client extends AbstractComponent{
 	private final static String NOM = "NOM";
 	private static final String AGE = "AGE";
-	private final FacadeComponent facade;
 	
-	protected Client(FacadeComponent facade) throws Exception {
+	ConcreteBCMEndPoint<DHTServicesCI> dht_edp;
+	
+	protected Client(String uri,ConcreteBCMEndPoint<DHTServicesCI> dht_edp) throws Exception {
         super(1, 0);
-        this.facade = facade;
+        this.dht_edp = dht_edp;
     }
+	
+	@Override
+	public synchronized void start() throws ComponentStartException{
+		dht_edp.initialiseClientSide(this);
+		super.start();
+	}
 	
 	@Override
     public void execute() throws Exception {
@@ -33,13 +42,13 @@ public class Client extends AbstractComponent{
         //ContentDataI p4 = new Personne("Omega", 82);
 
         // Ajout des données dans la table
-        facade.put(k1, p1);
-        facade.put(k2, p2);
-        facade.put(k3, p3);
+        dht_edp.getClientSideReference().put(k1, p1);
+        dht_edp.getClientSideReference().put(k2, p2);
+        dht_edp.getClientSideReference().put(k3, p3);
 
         // Récupération des données
         this.traceMessage("Récupération des données...");
-        ContentDataI result1 = facade.get(k1);
+        ContentDataI result1 = dht_edp.getClientSideReference().get(k1);
         this.traceMessage("Donnée pour k1: " + result1.getValue(NOM) + ", " + result1.getValue(AGE));
 
         // Moyenne des âges avec mapReduce
@@ -50,8 +59,20 @@ public class Client extends AbstractComponent{
         CombinatorI<int[]> combinator = (acc1, acc2) -> new int[]{acc1[0] + acc2[0], acc1[1] + acc2[1]};
         int[] initialAcc = new int[]{0, 0};
 
-        int[] res = facade.mapReduce(selector, processor, reductor, combinator, initialAcc);
+        int[] res = dht_edp.getClientSideReference().mapReduce(selector, processor, reductor, combinator, initialAcc);
         double ageMoyen = (res[1] == 0) ? 0 : (double) res[0] / res[1];
         this.traceMessage("L'âge moyen est: " + ageMoyen);
+    }
+	
+	@Override
+    public synchronized void finalise() throws Exception {
+        dht_edp.cleanUpClientSide();
+        super.finalise();
+    }
+
+
+    @Override
+    public synchronized void shutdown() throws fr.sorbonne_u.components.exceptions.ComponentShutdownException {
+        super.shutdown();
     }
 }

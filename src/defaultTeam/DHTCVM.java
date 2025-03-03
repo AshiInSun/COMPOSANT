@@ -1,56 +1,63 @@
 package defaultTeam;
 
+import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.cvm.AbstractCVM;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 
 public class DHTCVM extends AbstractCVM {
-
+	
+	private static final int NB_NODES = 2; 
     public DHTCVM() throws Exception {
 		super();
 	}
 
-	protected FacadeComponent facade;
-    protected NodeComponent node1, node2;
-    protected Client client;
-
     @Override
     public void deploy() throws Exception {
-    	// TODO : la gen des uri !! jsplus comment faire
-        // Création de la façade
-        this.facade = new FacadeComponent();
-        this.addDeployedComponent("URIFC", this.facade);
+    	
+    	String uri_facade = "f1";
+    	String uri_client = "c1";
+   
+        BCMContentNodeCompositeEndPoint dht_node =
+        		new BCMContentNodeCompositeEndPoint();
 
-        // Création des nœuds
-        this.node1 = new NodeComponent(0, 99);
-        this.addDeployedComponent("URINC1", this.node1);
-
-        this.node2 = new NodeComponent(100, 199);
-        this.addDeployedComponent("URINC2", this.node2);
-
-        // Connexion des nœuds entre eux
-        this.node1.connectToNextNode(
-            node2.getContentAccessEndpointURI(),
-            node2.getMapReduceEndpointURI(),
-            node2.getServicesEndpointURI()
-        );
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+		ConcreteBCMEndPoint<DHTServicesCI> dht_client =
+        		 new ConcreteBCMEndPoint(DHTServicesCI.class, DHTServicesCI.class, uri_client);
+        BCMContentNodeCompositeEndPoint[] endPointsNode = new BCMContentNodeCompositeEndPoint[NB_NODES];
         
-        this.node2.connectToNextNode(
-                node1.getContentAccessEndpointURI(),
-                node1.getMapReduceEndpointURI(),
-                node1.getServicesEndpointURI()
-            );
-
-        // Connexion de la façade au premier nœud
-        this.facade.connectToDHT(
-            node1.getContentAccessEndpointURI(),
-            node1.getMapReduceEndpointURI(),
-            node1.getServicesEndpointURI()
-        );
-
-        // Création du client
-        this.client = new Client(this.facade);
-        this.addDeployedComponent("URIC1", this.client);
-
-        super.deploy();
+        endPointsNode[0] = new BCMContentNodeCompositeEndPoint();
+        endPointsNode[1] = new BCMContentNodeCompositeEndPoint();
+        
+        for(int i=0; i<NB_NODES; i++) {
+        	String uri =  AbstractComponent.createComponent(
+					NodeComponent.class.getCanonicalName(),
+					new Object[] {
+						"node"+i,
+						i, // index
+						(i+1)%NB_NODES, // next_index
+						100, //map size
+						dht_node.copyWithSharable(),
+						endPointsNode [i].copyWithSharable(),
+						endPointsNode [(i+1)%NB_NODES].copyWithSharable()
+					});
+        }
+        
+      //Composant Facade
+	String uri3 = AbstractComponent.createComponent(
+			FacadeComponent.class.getCanonicalName(),
+			new Object[] {
+					uri_facade,
+					dht_client.copyWithSharable(),
+					dht_node.copyWithSharable()
+			});
+	
+	String uri4 = AbstractComponent.createComponent(
+			Client.class.getCanonicalName(),
+			new Object[] {
+					uri_client,
+					dht_client.copyWithSharable()
+			});
+    super.deploy();
     }
 
     public static void main(String[] args) {

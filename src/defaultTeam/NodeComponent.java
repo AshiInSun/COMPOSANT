@@ -173,7 +173,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
                
         mapResults.put(computationURI, results);
         
-        if (next_ind != 0) {
+        if (debut != 0) {
         	server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
         }
 	}
@@ -196,8 +196,8 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 			.map(value -> (R) value) 
 			.reduce(currentAcc, reductor::apply, combinator::apply);
 		
-		if (next_ind != 0) {
-			res = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, res)		
+		if (debut != 0) {
+			res = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, res);
 		}
 
 		return res;
