@@ -30,7 +30,7 @@ public class NodeComponent extends AbstractComponent {
     private final Map<ContentKeyI, ContentDataI> table;
     HashMap<String,Stream<ContentDataI>> streamMap;
     private Map<String, Map<ContentKeyI, Serializable>> mapResults;
-    private boolean visite;
+    private Map<String, Boolean> visited;
     BCMContentNodeCompositeEndPoint client_edp; //me
     BCMContentNodeCompositeEndPoint server_edp; //the next
     //
@@ -48,8 +48,8 @@ public class NodeComponent extends AbstractComponent {
         this.next_deb = next_deb;
         this.table = new HashMap<>();
         this.mapResults = new HashMap<>();
-        streamMap = new HashMap<String, Stream<ContentDataI>>();
-        this.visite = false;
+        this.streamMap = new HashMap<String, Stream<ContentDataI>>();
+        this.visited = new HashMap<>();
         this.client_edp = client_edp;
         this.server_edp = server_edp;
         if(debut==0) {
@@ -59,7 +59,6 @@ public class NodeComponent extends AbstractComponent {
         	this.dht_edp = null;
         }
         
-        this.toggleTracing();
         this.toggleLogging();
         
         client_edp.initialiseServerSide(this);
@@ -104,10 +103,10 @@ public class NodeComponent extends AbstractComponent {
 			return table.get(key);
 		}
 		else {
-			if (this.visite)
+			if (visited.containsKey(computationURI))
 				return null;	
 			
-			this.visite = true;
+			visited.put(computationURI, true);
 			return (server_edp.getContentAccessEndpoint()).getClientSideReference().getSync(computationURI, key);
 		}
 	}
@@ -119,10 +118,10 @@ public class NodeComponent extends AbstractComponent {
 			return table.put(key, value);
 		}
 		else {
-			if (this.visite)
+			if (visited.containsKey(computationURI))
 				return null;
 			
-			this.visite = true;
+			visited.put(computationURI, true);
 			return (server_edp.getContentAccessEndpoint().getClientSideReference()).putSync(computationURI, key, value);
 		}
 	}
@@ -134,9 +133,10 @@ public class NodeComponent extends AbstractComponent {
 			return table.remove(key);
 		}
 		else {
-			if (this.visite)
+			if (visited.containsKey(computationURI))
 				return null;
 			
+			visited.put(computationURI, true);
 			return (server_edp.getContentAccessEndpoint().getClientSideReference()).removeSync(computationURI, key);
 		}
 	}
@@ -147,18 +147,17 @@ public class NodeComponent extends AbstractComponent {
 		mapResults.remove(computationURI);
 	}
 
-	// NOTE: Faudra modifier la facon de faire quand on passera en multi-threading ( on utilisera le computationURI avec une hashmap IG )
 	public void clearComputation(String computationURI) throws Exception {
-		if (this.visite) {
-			this.visite = false;
+		if (visited.containsKey(computationURI)) {
+			visited.remove(computationURI);
 			(server_edp.getContentAccessEndpoint().getClientSideReference()).clearComputation(computationURI);
 		}
 	}
 	
 	public <R extends Serializable> void mapSync(String computationURI, SelectorI selector, ProcessorI<R> processor) throws Exception {
 		if (computationURI == null || computationURI.isEmpty() || selector == null || processor == null) 
-	        throw new IllegalArgumentException("Parametre(s) de mapSync null ");    
-	        
+	        throw new IllegalArgumentException("Parametre(s) de mapSync null ");    		
+		
         Map<ContentKeyI, Serializable> results = table.entrySet().stream()
             .filter(entry -> selector.test(entry.getValue()))
             .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), processor.apply(entry.getValue())))
@@ -167,7 +166,7 @@ public class NodeComponent extends AbstractComponent {
         mapResults.put(computationURI, results);
         
         if (next_deb != 0) {
-        	server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
+        server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
         }
 	}
 
