@@ -2,25 +2,30 @@ package defaultTeam;
 import java.io.Serializable;
 
 import fr.sorbonne_u.components.AbstractComponent;
+import fr.sorbonne_u.components.annotations.OfferedInterfaces;
+import fr.sorbonne_u.components.annotations.RequiredInterfaces;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
 import fr.sorbonne_u.components.exceptions.ConnectionException;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 import fr.sorbonne_u.cps.mapreduce.utils.URIGenerator;
 
-
-public class FacadeComponent extends AbstractComponent implements DHTServicesCI {
+@OfferedInterfaces(offered = {DHTServicesCI.class})
+@RequiredInterfaces(required = {DHTServicesCI.class, ContentAccessSyncCI.class, MapReduceSyncCI.class})
+public class FacadeComponent extends AbstractComponent {
 
 	private BCMContentNodeCompositeEndPoint server_edp;
 	private ConcreteBCMEndPoint<DHTServicesCI> client_edp;
 
-    public FacadeComponent(String uri, ConcreteBCMEndPoint<DHTServicesCI> client_edp , BCMContentNodeCompositeEndPoint server_edp) throws Exception {
+    protected FacadeComponent(String uri, ConcreteBCMEndPoint<DHTServicesCI> client_edp , BCMContentNodeCompositeEndPoint server_edp) throws Exception {
         super(1, 0);
 
         this.client_edp = client_edp;
@@ -53,7 +58,6 @@ public class FacadeComponent extends AbstractComponent implements DHTServicesCI 
     	super.shutdown();
     }
 
-	@Override
 	public ContentDataI get(ContentKeyI key) throws Exception {
 		String computationURI = URIGenerator.generateURI();
 		ContentDataI res = server_edp.getContentAccessEndpoint().getClientSideReference().getSync(computationURI, key);
@@ -61,7 +65,6 @@ public class FacadeComponent extends AbstractComponent implements DHTServicesCI 
 		return res;
 	}
 
-	@Override
 	public ContentDataI put(ContentKeyI key, ContentDataI value) throws Exception {
 		String computationURI = URIGenerator.generateURI();
 		ContentDataI res = server_edp.getContentAccessEndpoint().getClientSideReference().putSync(computationURI, key, value);
@@ -69,7 +72,6 @@ public class FacadeComponent extends AbstractComponent implements DHTServicesCI 
 		return res;
 	}
 
-	@Override
 	public ContentDataI remove(ContentKeyI key) throws Exception {
 		String computationURI = URIGenerator.generateURI();
 		ContentDataI res = server_edp.getContentAccessEndpoint().getClientSideReference().removeSync(computationURI, key);
@@ -77,7 +79,6 @@ public class FacadeComponent extends AbstractComponent implements DHTServicesCI 
 		return res;
 	}
 
-	@Override
 	public <R extends Serializable, A extends Serializable> A mapReduce(
 			SelectorI selector, 
 			ProcessorI<R> processor,

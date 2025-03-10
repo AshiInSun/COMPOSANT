@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.ports.AbstractOutboundPort;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
@@ -15,11 +14,11 @@ public class DHTMapReduceOutboundPort extends AbstractOutboundPort implements Ma
     private static final long serialVersionUID = 1L;
 
     public DHTMapReduceOutboundPort(String uri, ComponentI owner) throws Exception {
-        super(uri, DHTServicesCI.class, owner);
+        super(uri, MapReduceSyncCI.class, owner);
     }
     
     public DHTMapReduceOutboundPort(ComponentI owner) throws Exception {
-        super(DHTServicesCI.class, owner);
+        super(MapReduceSyncCI.class, owner);
     }
 
 	@Override

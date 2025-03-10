@@ -1,13 +1,17 @@
 package defaultTeam;
 import fr.sorbonne_u.components.AbstractComponent;
+import fr.sorbonne_u.components.annotations.OfferedInterfaces;
+import fr.sorbonne_u.components.annotations.RequiredInterfaces;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
 import fr.sorbonne_u.components.exceptions.ConnectionException;
+
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
@@ -18,7 +22,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class NodeComponent extends AbstractComponent implements ContentAccessSyncCI, MapReduceSyncCI {
+@OfferedInterfaces(offered = {ContentAccessSyncCI.class, MapReduceSyncCI.class, DHTServicesCI.class})
+@RequiredInterfaces(required = {ContentAccessSyncCI.class, MapReduceSyncCI.class})
+public class NodeComponent extends AbstractComponent {
 
     private final int debut, fin, next_deb;
     private final Map<ContentKeyI, ContentDataI> table;
@@ -30,7 +36,7 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
     //
     BCMContentNodeCompositeEndPoint dht_edp; //only for the first node : connexion to facade
     
-    public NodeComponent(String uri, int debut, int fin, int next_deb,
+    protected NodeComponent(String uri, int debut, int fin, int next_deb,
 		BCMContentNodeCompositeEndPoint dht_edp,
 		BCMContentNodeCompositeEndPoint client_edp,
 		BCMContentNodeCompositeEndPoint server_edp) throws Exception {
@@ -91,7 +97,6 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 		return streamMap.containsKey(computationURI);
 	}
     
-    @Override
 	public ContentDataI getSync(String computationURI, ContentKeyI key) throws Exception {	
 		int h = key.hashCode();
 		
@@ -107,7 +112,6 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 		}
 	}
 
-	@Override
 	public ContentDataI putSync(String computationURI, ContentKeyI key, ContentDataI value) throws Exception {
 		int h = key.hashCode();
 		
@@ -123,7 +127,6 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 		}
 	}
 
-	@Override
 	public ContentDataI removeSync(String computationURI, ContentKeyI key) throws Exception {
 		int h = key.hashCode();
 		
@@ -138,14 +141,12 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 		}
 	}
 	
-	@Override
 	public void clearMapReduceComputation(String computationURI) throws Exception {
 		if (computationURI == null || computationURI.isEmpty() )
 			System.out.print("Parametre(s) de reduceSync null");
 		mapResults.remove(computationURI);
 	}
 
-	@Override
 	// NOTE: Faudra modifier la facon de faire quand on passera en multi-threading ( on utilisera le computationURI avec une hashmap IG )
 	public void clearComputation(String computationURI) throws Exception {
 		if (this.visite) {
@@ -154,7 +155,6 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
 		}
 	}
 	
-	@Override
 	public <R extends Serializable> void mapSync(String computationURI, SelectorI selector, ProcessorI<R> processor) throws Exception {
 		if (computationURI == null || computationURI.isEmpty() || selector == null || processor == null) 
 	        throw new IllegalArgumentException("Parametre(s) de mapSync null ");    
@@ -171,7 +171,6 @@ public class NodeComponent extends AbstractComponent implements ContentAccessSyn
         }
 	}
 
-	@Override
 	public <A extends Serializable, R> A reduceSync(String computationURI, ReductorI<A, R> reductor, CombinatorI<A> combinator, A currentAcc)
 			throws Exception {
 		if (computationURI == null || computationURI.isEmpty() || reductor == null || combinator == null) {

@@ -1,5 +1,6 @@
 package defaultTeam;
 import fr.sorbonne_u.components.AbstractComponent;
+import fr.sorbonne_u.components.annotations.RequiredInterfaces;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
 import fr.sorbonne_u.components.exceptions.ConnectionException;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
@@ -10,6 +11,7 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 
+@RequiredInterfaces(required = {DHTServicesCI.class})
 public class Client extends AbstractComponent{
 	private final static String NOM = "NOM";
 	private static final String AGE = "AGE";

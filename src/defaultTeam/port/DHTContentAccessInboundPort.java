@@ -1,24 +1,22 @@
 package defaultTeam.port;
 
+import defaultTeam.NodeComponent;
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.ports.AbstractInboundPort;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 
 public class DHTContentAccessInboundPort extends AbstractInboundPort implements ContentAccessSyncCI{
     private static final long serialVersionUID = 1L;
-    private final ComponentI owner;
 
     public DHTContentAccessInboundPort(String uri, ComponentI owner) throws Exception {
-        super(uri, DHTServicesCI.class, (ComponentI) owner);
-        this.owner = owner;
+        super(uri, ContentAccessSyncCI.class, (ComponentI) owner);
     }
 
     @Override
 	public ContentDataI getSync(String computationURI, ContentKeyI key) throws Exception {
-		return ((ContentAccessSyncCI) this.owner).getSync(computationURI, key);
+		return ((NodeComponent) this.owner).getSync(computationURI, key);
 	}
 
 	@Override
@@ -27,17 +25,17 @@ public class DHTContentAccessInboundPort extends AbstractInboundPort implements 
 		ContentKeyI key, 
 		ContentDataI value) throws Exception {
 		
-		return ((ContentAccessSyncCI) this.owner).putSync(computationURI, key, value);
+		return ((NodeComponent) this.owner).putSync(computationURI, key, value);
 	}
 
 	@Override
 	public ContentDataI removeSync(String computationURI, ContentKeyI key) throws Exception {
-		return ((ContentAccessSyncCI) this.owner).removeSync(computationURI, key);
+		return ((NodeComponent) this.owner).removeSync(computationURI, key);
 	}
 
 	@Override
 	public void clearComputation(String computationURI) throws Exception {
-		((ContentAccessSyncCI) this.owner).clearComputation(computationURI);
+		((NodeComponent) this.owner).clearComputation(computationURI);
 	}
 
     
