@@ -15,6 +15,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
+import fr.sorbonne_u.cps.mapreduce.utils.IntInterval;
+
 import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -25,8 +27,9 @@ import java.util.stream.Stream;
 @OfferedInterfaces(offered = {ContentAccessSyncCI.class, MapReduceSyncCI.class, DHTServicesCI.class})
 @RequiredInterfaces(required = {ContentAccessSyncCI.class, MapReduceSyncCI.class})
 public class NodeComponent extends AbstractComponent {
-
-    private final int debut, fin, next_deb;
+	
+	private IntInterval interval;
+    private final int next_deb;	// TEMPORAIRE
     private final Map<ContentKeyI, ContentDataI> table;
     HashMap<String,Stream<ContentDataI>> streamMap;
     private Map<String, Map<ContentKeyI, Serializable>> mapResults;
@@ -43,8 +46,7 @@ public class NodeComponent extends AbstractComponent {
     	
         super(1, 0);
 
-        this.debut = debut;
-        this.fin = fin;
+        this.interval = new IntInterval(debut, fin);
         this.next_deb = next_deb;
         this.table = new HashMap<>();
         this.mapResults = new HashMap<>();
@@ -85,7 +87,7 @@ public class NodeComponent extends AbstractComponent {
 
     @Override
     public void shutdown() throws ComponentShutdownException {
-        if(debut==0) {
+        if(interval.first() == 0) {
         	dht_edp.cleanUpServerSide();
         }
         client_edp.cleanUpServerSide();
@@ -99,7 +101,7 @@ public class NodeComponent extends AbstractComponent {
 	public ContentDataI getSync(String computationURI, ContentKeyI key) throws Exception {	
 		int h = key.hashCode();
 		
-		if ( debut <= h && h <= fin ) {
+		if ( interval.in(h) ) {
 			return table.get(key);
 		}
 		else {
@@ -114,7 +116,7 @@ public class NodeComponent extends AbstractComponent {
 	public ContentDataI putSync(String computationURI, ContentKeyI key, ContentDataI value) throws Exception {
 		int h = key.hashCode();
 		
-		if ( debut <= h && h <= fin ) {
+		if ( interval.in(h) ) {
 			return table.put(key, value);
 		}
 		else {
@@ -129,7 +131,7 @@ public class NodeComponent extends AbstractComponent {
 	public ContentDataI removeSync(String computationURI, ContentKeyI key) throws Exception {
 		int h = key.hashCode();
 		
-		if ( debut <= h && h <= fin ) {
+		if ( interval.in(h) ) {
 			return table.remove(key);
 		}
 		else {
