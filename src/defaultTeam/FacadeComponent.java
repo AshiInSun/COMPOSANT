@@ -92,7 +92,7 @@ public class FacadeComponent extends AbstractComponent {
 		String computationURI = URIGenerator.generateURI("MAP_REDUCE");
 		server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
 		A res = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, initialAcc);
-		server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);
+		server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);		
 		return res;
 	}
 }

@@ -5,17 +5,16 @@ import fr.sorbonne_u.components.ports.AbstractOutboundPort;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 
 public class DHTContentAccessOutboundPort extends AbstractOutboundPort implements ContentAccessSyncCI {
     private static final long serialVersionUID = 1L;
 
     public DHTContentAccessOutboundPort(String uri, ComponentI owner) throws Exception {
-        super(uri, DHTServicesCI.class, owner);
+        super(uri, ContentAccessSyncCI.class, owner);
     }
     
     public DHTContentAccessOutboundPort(ComponentI owner) throws Exception {
-        super(DHTServicesCI.class, owner);
+        super(ContentAccessSyncCI.class, owner);
     }
 
 	@Override

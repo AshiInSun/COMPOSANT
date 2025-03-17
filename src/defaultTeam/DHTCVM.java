@@ -38,7 +38,6 @@ public class DHTCVM extends AbstractCVM {
 						"node"+i,
 						i*SIZE_NODES, // index
 						((i+1)*SIZE_NODES)-1, 
-						((i+1)*SIZE_NODES)%(NB_NODES*SIZE_NODES), 
 						dht_node.copyWithSharable(),
 						endPointsNode [i].copyWithSharable(),
 						endPointsNode [(i+1)%NB_NODES].copyWithSharable()
