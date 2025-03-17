@@ -53,7 +53,6 @@ public class NodeComponent extends AbstractComponent {
         this.client_edp = client_edp;
         this.server_edp = server_edp;
         if(debut==0) {
-        	System.out.println("First Node");
         	this.dht_edp = dht_edp;
         }else {
         	this.dht_edp = null;
@@ -65,7 +64,6 @@ public class NodeComponent extends AbstractComponent {
         if(debut==0) {
         	dht_edp.initialiseServerSide(this);
         }
-        System.out.println("NodeComponent initialisé.");
     }
     @Override
     public void start() throws ComponentStartException {
@@ -142,6 +140,9 @@ public class NodeComponent extends AbstractComponent {
 	}
 
 	public void clearComputation(String computationURI) throws Exception {
+		if (computationURI == null || computationURI.isEmpty() )
+			throw new IllegalArgumentException("ComputationURI null");
+		
 		if (visited.containsKey(computationURI)) {
 			visited.remove(computationURI);
 			(server_edp.getContentAccessEndpoint().getClientSideReference()).clearComputation(computationURI);
@@ -150,14 +151,16 @@ public class NodeComponent extends AbstractComponent {
 	
 	public void clearMapReduceComputation(String computationURI) throws Exception {
 		if (computationURI == null || computationURI.isEmpty() )
-			System.out.print("Parametre(s) de reduceSync null");
+			throw new IllegalArgumentException("ComputationURI null");
 		
-		synchronized (streamMap) {
-			streamMap.remove(computationURI);
-			visitedMap.remove(computationURI);
-			visitedReduce.remove(computationURI);
+		if (visitedMap.containsKey(computationURI) && visitedReduce.containsKey(computationURI)){
+			synchronized (streamMap) {
+				streamMap.remove(computationURI);
+				visitedMap.remove(computationURI);
+				visitedReduce.remove(computationURI);
+			}
+			server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);
 		}
-		
 	}
 	
 	@SuppressWarnings("unchecked")
