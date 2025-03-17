@@ -32,7 +32,6 @@ public class NodeComponent extends AbstractComponent {
     private final int next_deb;	// TEMPORAIRE
     private final Map<ContentKeyI, ContentDataI> table;
     HashMap<String,Stream<ContentDataI>> streamMap;
-    private Map<String, Map<ContentKeyI, Serializable>> mapResults;
     private Map<String, Boolean> visited;
     BCMContentNodeCompositeEndPoint client_edp; //me
     BCMContentNodeCompositeEndPoint server_edp; //the next
@@ -49,7 +48,6 @@ public class NodeComponent extends AbstractComponent {
         this.interval = new IntInterval(debut, fin);
         this.next_deb = next_deb;
         this.table = new HashMap<>();
-        this.mapResults = new HashMap<>();
         this.streamMap = new HashMap<String, Stream<ContentDataI>>();
         this.visited = new HashMap<>();
         this.client_edp = client_edp;
@@ -142,12 +140,6 @@ public class NodeComponent extends AbstractComponent {
 			return (server_edp.getContentAccessEndpoint().getClientSideReference()).removeSync(computationURI, key);
 		}
 	}
-	
-	public void clearMapReduceComputation(String computationURI) throws Exception {
-		if (computationURI == null || computationURI.isEmpty() )
-			System.out.print("Parametre(s) de reduceSync null");
-		mapResults.remove(computationURI);
-	}
 
 	public void clearComputation(String computationURI) throws Exception {
 		if (visited.containsKey(computationURI)) {
@@ -156,19 +148,31 @@ public class NodeComponent extends AbstractComponent {
 		}
 	}
 	
+	public void clearMapReduceComputation(String computationURI) throws Exception {
+		if (computationURI == null || computationURI.isEmpty() )
+			System.out.print("Parametre(s) de reduceSync null");
+		
+		synchronized (streamMap) {
+			streamMap.remove(computationURI);
+		}
+		
+	}
+	
 	public <R extends Serializable> void mapSync(String computationURI, SelectorI selector, ProcessorI<R> processor) throws Exception {
 		if (computationURI == null || computationURI.isEmpty() || selector == null || processor == null) 
 	        throw new IllegalArgumentException("Parametre(s) de mapSync null ");    		
 		
-        Map<ContentKeyI, Serializable> results = table.entrySet().stream()
-            .filter(entry -> selector.test(entry.getValue()))
-            .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), processor.apply(entry.getValue())))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-               
-        mapResults.put(computationURI, results);
+        Stream<ContentDataI> mapResults = (Stream<ContentDataI>) table.values()
+        		.stream()
+        		.filter(selector)
+        		.map(processor);
         
+        synchronized (streamMap) {
+        	streamMap.put(computationURI, mapResults);
+        }
+           
         if (next_deb != 0) {
-        server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
+        	server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
         }
 	}
 
@@ -178,21 +182,23 @@ public class NodeComponent extends AbstractComponent {
 	        throw new IllegalArgumentException("Parametre(s) de reduceSync null ");    
 		}
 		
-		Map<ContentKeyI, Serializable> resultsInterm = mapResults.get(computationURI);
+		ReductorI<A, ContentDataI> reduct = (ReductorI<A, ContentDataI>) reductor;
+		Stream<ContentDataI> mapResults; 
 		
-		if (resultsInterm == null) {
-	        throw new IllegalStateException("Aucun résultat trouvé pour ce computationURI: " + computationURI);
-	    }
+		synchronized (streamMap) {
+			mapResults = streamMap.get(computationURI);
+		}
 		
-		@SuppressWarnings("unchecked")
-		A res = resultsInterm.values().stream()
-			.map(value -> (R) value) 
-			.reduce(currentAcc, reductor::apply, combinator::apply);
+		if (mapResults == null)
+			throw new IllegalStateException("Pas de resultats trouvé pour computationUri: " + computationURI);
+		
+		A reduceResult = mapResults.reduce(currentAcc, reduct, combinator);
 		
 		if (next_deb != 0) {
-			res = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, res);
+			reduceResult = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, reduceResult);
 		}
 
-		return res;
+		return reduceResult;
 	}
 }
+
