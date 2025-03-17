@@ -29,7 +29,6 @@ public class ConcreteBCMEndPoint<CI extends fr.sorbonne_u.components.interfaces.
 
     @Override
     protected AbstractInboundPort makeInboundPort(AbstractComponent c, String inboundPortURI) throws Exception {
-    	System.out.println("Inboundndndndnndndndndn");
 		 if(this.getServerSideInterface().equals(DHTServicesCI.class)) {
 			 DHTServiceInboundPort inboundPort = new DHTServiceInboundPort(inboundPortURI, c);
 			 inboundPort.publishPort();
@@ -53,7 +52,6 @@ public class ConcreteBCMEndPoint<CI extends fr.sorbonne_u.components.interfaces.
     @SuppressWarnings("unchecked")
 	@Override
 	protected CI makeOutboundPort(AbstractComponent c, String inboundPortURI) throws Exception {
-    	System.out.println("ACAAAAABEUHHHHH");
     	
 		if (this.getClientSideInterface().equals(DHTServicesCI.class)) {
             DHTServiceOutboundPort outboundPort = new DHTServiceOutboundPort(c);
