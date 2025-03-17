@@ -16,25 +16,35 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 import fr.sorbonne_u.cps.mapreduce.utils.IntInterval;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceCI;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessCI;
+
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-@OfferedInterfaces(offered = {ContentAccessSyncCI.class, MapReduceSyncCI.class, DHTServicesCI.class})
-@RequiredInterfaces(required = {ContentAccessSyncCI.class, MapReduceSyncCI.class})
+@OfferedInterfaces(offered = {ContentAccessSyncCI.class, MapReduceSyncCI.class, 
+        ContentAccessCI.class, MapReduceCI.class, 
+        DHTServicesCI.class})
+@RequiredInterfaces(required = {ContentAccessSyncCI.class, MapReduceSyncCI.class, 
+        ContentAccessCI.class, MapReduceCI.class})
 public class NodeComponent extends AbstractComponent {
 	
 	private IntInterval interval;
+	private String uri;
+	
+	
     private final Map<ContentKeyI, ContentDataI> table;
     HashMap<String,Stream<ContentDataI>> streamMap;
+    
     private Map<String, Boolean> visited;
     private Map<String, Boolean> visitedMap;	// On peut optimiser ces deux hashmap visited pour map reduce
     private Map<String, Boolean> visitedReduce;
+    
     BCMContentNodeCompositeEndPoint client_edp; //me
     BCMContentNodeCompositeEndPoint server_edp; //the next
-    //
     BCMContentNodeCompositeEndPoint dht_edp; //only for the first node : connexion to facade
     
     protected NodeComponent(String uri, int debut, int fin,
@@ -45,6 +55,7 @@ public class NodeComponent extends AbstractComponent {
         super(1, 0);
 
         this.interval = new IntInterval(debut, fin);
+        this.uri = uri;
         this.table = new HashMap<>();
         this.streamMap = new HashMap<String, Stream<ContentDataI>>();
         this.visited = new HashMap<>();
@@ -93,6 +104,10 @@ public class NodeComponent extends AbstractComponent {
     public boolean existStream(String computationURI) {
 		return streamMap.containsKey(computationURI);
 	}
+    
+    public String getURI() {
+    	return this.uri;
+    }
     
 	public ContentDataI getSync(String computationURI, ContentKeyI key) throws Exception {	
 		int h = key.hashCode();
