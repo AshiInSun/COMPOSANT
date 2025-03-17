@@ -165,13 +165,12 @@ public class NodeComponent extends AbstractComponent {
 		if (computationURI == null || computationURI.isEmpty() || selector == null || processor == null) 
 	        throw new IllegalArgumentException("Parametre(s) de mapSync null ");    		
 		
-		if (visitedMap.containsKey(computationURI))
-            return;
+		synchronized (visitedMap) {
+			if (visitedMap.containsKey(computationURI)) return;
+			visitedMap.put(computationURI, true);
+		}
 		
-		visitedMap.put(computationURI, true);
-		
-        Stream<ContentDataI> mapResults = (Stream<ContentDataI>) table.values()
-        		.stream()
+        Stream<ContentDataI> mapResults = (Stream<ContentDataI>) table.values().stream()
         		.filter(selector)
         		.map(processor);
         
@@ -189,10 +188,10 @@ public class NodeComponent extends AbstractComponent {
 	        throw new IllegalArgumentException("Parametre(s) de reduceSync null ");    
 		}
 		
-		if (visitedReduce.containsKey(computationURI))
-            return currentAcc;
-		
-		visitedReduce.put(computationURI, true);
+		synchronized (visitedReduce) {
+			if (visitedReduce.containsKey(computationURI)) return currentAcc;		
+			visitedReduce.put(computationURI, true);
+		}
 		
 		ReductorI<A, ContentDataI> reduct = (ReductorI<A, ContentDataI>) reductor;
 		Stream<ContentDataI> mapResults; 
