@@ -17,48 +17,33 @@ public class DHTAsyncContentAccessInboundPort extends DHTContentAccessInboundPor
 	@Override
 	public <I extends ResultReceptionCI> void get(String computationURI, ContentKeyI key, EndPointI<I> caller)
 			throws Exception {
-		this.getOwner().runTask(
-	            owner -> {
-	                try {
-	                    ContentDataI result = ((AsyncNodeComponent) owner).getSync(computationURI, key);
-	                    caller.getClientSideReference().acceptResult(computationURI, result);
-	                } catch (Exception e) {
-	                    e.printStackTrace();
-	                }
-	            }
-	        );		
+
+	    try {
+	        ((AsyncNodeComponent) owner).get(computationURI, key, caller);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
 	}
 
 	@Override
 	public <I extends ResultReceptionCI> void put(String computationURI, ContentKeyI key, ContentDataI value,
 			EndPointI<I> caller) throws Exception {
-		this.getOwner().runTask(
-	            owner -> {
-	                try {
-	                    ContentDataI result = ((AsyncNodeComponent) owner).putSync(computationURI, key, value);
-	                    caller.getClientSideReference().acceptResult(computationURI, result);
-	                } catch (Exception e) {
-	                    e.printStackTrace();
-	                }
-	            }
-	        );
+        try {
+            ((AsyncNodeComponent) owner).put(computationURI, key, value, caller);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 		
 	}
 
 	@Override
 	public <I extends ResultReceptionCI> void remove(String computationURI, ContentKeyI key, EndPointI<I> caller)
 			throws Exception {
-		this.getOwner().runTask(
-	            owner -> {
-	                try {
-	                    ContentDataI result = ((AsyncNodeComponent) owner).removeSync(computationURI, key);
-	                    caller.getClientSideReference().acceptResult(computationURI, result);
-	                } catch (Exception e) {
-	                    e.printStackTrace();
-	                }
-	            }
-	        );
-		
+        try {
+            ((AsyncNodeComponent) owner).remove(computationURI, key, caller);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }	
 	}
 
 }
