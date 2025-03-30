@@ -1,4 +1,5 @@
 package defaultTeam;
+
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
@@ -11,56 +12,75 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 
+import java.util.concurrent.CountDownLatch;
+
 @RequiredInterfaces(required = {DHTServicesCI.class})
-public class Client extends AbstractComponent{
-	private final static String NOM = "NOM";
-	private static final String AGE = "AGE";
-	
-	ConcreteBCMEndPoint<DHTServicesCI> dht_edp;
-	
-	protected Client(String uri,ConcreteBCMEndPoint<DHTServicesCI> dht_edp) throws Exception {
+public class Client extends AbstractComponent {
+    private static final String NOM = "NOM";
+    private static final String AGE = "AGE";
+
+    private ConcreteBCMEndPoint<DHTServicesCI> dht_edp;
+
+    protected Client(String uri, ConcreteBCMEndPoint<DHTServicesCI> dht_edp) throws Exception {
         super(1, 0);
         this.dht_edp = dht_edp;
     }
+
+    @Override
+    public synchronized void start() throws ComponentStartException {
+        try {
+            dht_edp.initialiseClientSide(this);
+        } catch (ConnectionException e) {
+            e.printStackTrace();
+        }
+        super.start();
+    }
+
+    @Override
+	    public void execute() throws Exception {
+	        this.traceMessage("Client démarre les tests asynchrones...\n");
 	
-	@Override
-	public synchronized void start() throws ComponentStartException{
-		try {
-			dht_edp.initialiseClientSide(this);
-		} catch (ConnectionException e) {
-			e.printStackTrace();
-		}
-		super.start();
-	}
+	        // Création de Personnes et de leur clef associée
+	        ContentKeyI k1 = new ContentKey("123");
+	        ContentKeyI k2 = new ContentKey("nextnode");
+	        ContentKeyI k3 = new ContentKey("789");
 	
-	@Override
-    public void execute() throws Exception {
-        this.traceMessage("Client démarre les tests...\n");
+	        ContentDataI p1 = new Personne("Alpha", 10);
+	        ContentDataI p2 = new Personne("Beta", 16);
+	        ContentDataI p3 = new Personne("Delta", 35);
+	
+	        // Ajout des données de manière asynchrone avec un CountDownLatch pour synchronisation
+	        CountDownLatch latch = new CountDownLatch(3);
+	        this.traceMessage("Insertion des données (asynchrone)...\n");
+	
+	        dht_edp.getClientSideReference().put(k1, p1);
+	        this.traceMessage("Donnée insérée pour k1\n");
+            latch.countDown();
 
-        // Création de Personnes et de leur clef associée
-        ContentKeyI k1 = new ContentKey("123");
-        ContentKeyI k2 = new ContentKey("nextnode");
-        ContentKeyI k3 = new ContentKey("789");
-        //ContentKeyI k4 = new ContentKey("123");
+	
+	        dht_edp.getClientSideReference().put(k2, p2);
+            this.traceMessage("Donnée insérée pour k2\n");
+            latch.countDown();
+	
+	        dht_edp.getClientSideReference().put(k3, p3);
+            this.traceMessage("Donnée insérée pour k3\n");
+            latch.countDown();
+            
+	        // Attendre que toutes les insertions soient terminées
+	        latch.await();
 
-        ContentDataI p1 = new Personne("Alpha", 10);
-        ContentDataI p2 = new Personne("Beta", 16);
-        ContentDataI p3 = new Personne("Delta", 35);
-        //ContentDataI p4 = new Personne("Omega", 82);
+        // Récupération des données de manière asynchrone
+        this.traceMessage("Récupération des données (asynchrone)...\n");
 
-        // Ajout des données dans la table
-        this.traceMessage("Insertion des données...\n");
-        dht_edp.getClientSideReference().put(k1, p1);
-        dht_edp.getClientSideReference().put(k2, p2);
-        dht_edp.getClientSideReference().put(k3, p3);
+        ContentDataI result = dht_edp.getClientSideReference().get(k1);
+        if (result != null) 
+            this.traceMessage("Donnée pour k1: " + result.getValue(NOM) + ", " + result.getValue(AGE) + "\n");
+        else
+            this.traceMessage("Donnée pour k1 non trouvée.\n");
 
-        // Récupération des données
-        this.traceMessage("Récupération des données...\n");
-        ContentDataI result1 = dht_edp.getClientSideReference().get(k1);
-        this.traceMessage("Donnée pour k1: " + result1.getValue(NOM) + ", " + result1.getValue(AGE) + "\n");
+        // Moyenne des âges avec mapReduce asynchrone
+        this.traceMessage("\nUtilisation de mapReduce (asynchrone) pour calculer l'âge moyen\n");
 
-        // Moyenne des âges avec mapReduce
-        this.traceMessage("\nUtilisation de mapReduce pour calculer l'âge moyen\n");
         SelectorI selector = data -> true;
         ProcessorI<Integer> processor = data -> (data instanceof Personne) ? (Integer) data.getValue(AGE) : 0;
         ReductorI<int[], Integer> reductor = (acc, age) -> new int[]{acc[0] + age, acc[1] + 1};
@@ -69,15 +89,14 @@ public class Client extends AbstractComponent{
 
         int[] res = dht_edp.getClientSideReference().mapReduce(selector, processor, reductor, combinator, initialAcc);
         double ageMoyen = (res[1] == 0) ? 0 : (double) res[0] / res[1];
-        this.traceMessage("L'âge moyen est: " + ageMoyen);
+        this.traceMessage("L'âge moyen est: " + ageMoyen + "\n");
     }
-	
-	@Override
+
+    @Override
     public synchronized void finalise() throws Exception {
         dht_edp.cleanUpClientSide();
         super.finalise();
     }
-
 
     @Override
     public synchronized void shutdown() throws fr.sorbonne_u.components.exceptions.ComponentShutdownException {

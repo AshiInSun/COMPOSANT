@@ -1,6 +1,8 @@
 package defaultTeam;
+import defaultTeam.port.DHTAsyncContentAccessConnector;
 import defaultTeam.port.DHTAsyncContentAccessInboundPort;
 import defaultTeam.port.DHTAsyncContentAccessOutboundPort;
+import defaultTeam.port.DHTAsyncMapReduceConnector;
 import defaultTeam.port.DHTAsyncMapReduceInboundPort;
 import defaultTeam.port.DHTAsyncMapReduceOutboundPort;
 import defaultTeam.port.DHTContentAccessConnector;
@@ -50,7 +52,7 @@ public class ConcreteAsyncBCMEndPoint<CI extends fr.sorbonne_u.components.interf
         	String outboundPortURI = AbstractPort.generatePortURI(ContentAccessCI.class);
             DHTAsyncContentAccessOutboundPort outboundPort = new DHTAsyncContentAccessOutboundPort(outboundPortURI, c);
             outboundPort.publishPort();
-            DHTContentAccessConnector connector = new DHTContentAccessConnector();
+            DHTAsyncContentAccessConnector connector = new DHTAsyncContentAccessConnector();
             outboundPort.doConnection(inboundPortURI, connector);
             return (CI) outboundPort;
             
@@ -58,7 +60,7 @@ public class ConcreteAsyncBCMEndPoint<CI extends fr.sorbonne_u.components.interf
         	String outboundPortURI = AbstractPort.generatePortURI(MapReduceCI.class);
             DHTAsyncMapReduceOutboundPort outboundPort = new DHTAsyncMapReduceOutboundPort(outboundPortURI, c);
             outboundPort.publishPort();
-            DHTMapReduceConnector connector = new DHTMapReduceConnector();
+            DHTAsyncMapReduceConnector connector = new DHTAsyncMapReduceConnector();
             outboundPort.doConnection(inboundPortURI, connector);
             return (CI) outboundPort;
         }else {

@@ -2,6 +2,7 @@ package defaultTeam.port;
 
 import java.io.Serializable;
 
+import defaultTeam.FacadeAsyncComponent;
 import defaultTeam.FacadeComponent;
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.ports.AbstractInboundPort;
@@ -22,17 +23,17 @@ public class DHTServiceInboundPort extends AbstractInboundPort implements DHTSer
 
 	@Override
 	public ContentDataI get(ContentKeyI key) throws Exception {
-		return ((FacadeComponent) this.owner).get(key);
+		return ((FacadeAsyncComponent) this.owner).get(key);
 	}
 
 	@Override
 	public ContentDataI put(ContentKeyI key, ContentDataI value) throws Exception {
-		return ((FacadeComponent) this.owner).put(key, value);
+		return ((FacadeAsyncComponent) this.owner).put(key, value);
 	}
 
 	@Override
 	public ContentDataI remove(ContentKeyI key) throws Exception {
-		return ((FacadeComponent) this.owner).remove(key);
+		return ((FacadeAsyncComponent) this.owner).remove(key);
 	}
 
 	@Override
@@ -43,7 +44,7 @@ public class DHTServiceInboundPort extends AbstractInboundPort implements DHTSer
 		CombinatorI<A> combinator, 
 		A initialAcc) throws Exception {
 		
-		return ((FacadeComponent) this.owner).mapReduce(selector, processor, reductor, combinator, initialAcc);
+		return ((FacadeAsyncComponent) this.owner).mapReduce(selector, processor, reductor, combinator, initialAcc);
 	}
 
     

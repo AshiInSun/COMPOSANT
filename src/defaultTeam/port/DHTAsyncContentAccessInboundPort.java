@@ -1,5 +1,5 @@
 package defaultTeam.port;
-import defaultTeam.NodeComponent;
+import defaultTeam.AsyncNodeComponent;
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.endpoints.EndPointI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessCI;
@@ -20,7 +20,7 @@ public class DHTAsyncContentAccessInboundPort extends DHTContentAccessInboundPor
 		this.getOwner().runTask(
 	            owner -> {
 	                try {
-	                    ContentDataI result = ((NodeComponent) owner).getSync(computationURI, key);
+	                    ContentDataI result = ((AsyncNodeComponent) owner).getSync(computationURI, key);
 	                    caller.getClientSideReference().acceptResult(computationURI, result);
 	                } catch (Exception e) {
 	                    e.printStackTrace();
@@ -35,7 +35,7 @@ public class DHTAsyncContentAccessInboundPort extends DHTContentAccessInboundPor
 		this.getOwner().runTask(
 	            owner -> {
 	                try {
-	                    ContentDataI result = ((NodeComponent) owner).putSync(computationURI, key, value);
+	                    ContentDataI result = ((AsyncNodeComponent) owner).putSync(computationURI, key, value);
 	                    caller.getClientSideReference().acceptResult(computationURI, result);
 	                } catch (Exception e) {
 	                    e.printStackTrace();
@@ -51,7 +51,7 @@ public class DHTAsyncContentAccessInboundPort extends DHTContentAccessInboundPor
 		this.getOwner().runTask(
 	            owner -> {
 	                try {
-	                    ContentDataI result = ((NodeComponent) owner).removeSync(computationURI, key);
+	                    ContentDataI result = ((AsyncNodeComponent) owner).removeSync(computationURI, key);
 	                    caller.getClientSideReference().acceptResult(computationURI, result);
 	                } catch (Exception e) {
 	                    e.printStackTrace();

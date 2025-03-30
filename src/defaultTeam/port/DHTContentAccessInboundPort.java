@@ -1,5 +1,6 @@
 package defaultTeam.port;
 
+import defaultTeam.AsyncNodeComponent;
 import defaultTeam.NodeComponent;
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.ports.AbstractInboundPort;
@@ -16,7 +17,7 @@ public class DHTContentAccessInboundPort extends AbstractInboundPort implements 
 
     @Override
 	public ContentDataI getSync(String computationURI, ContentKeyI key) throws Exception {
-		return ((NodeComponent) this.owner).getSync(computationURI, key);
+		return ((AsyncNodeComponent) this.owner).getSync(computationURI, key);
 	}
 
 	@Override
@@ -25,17 +26,17 @@ public class DHTContentAccessInboundPort extends AbstractInboundPort implements 
 		ContentKeyI key, 
 		ContentDataI value) throws Exception {
 		
-		return ((NodeComponent) this.owner).putSync(computationURI, key, value);
+		return ((AsyncNodeComponent) this.owner).putSync(computationURI, key, value);
 	}
 
 	@Override
 	public ContentDataI removeSync(String computationURI, ContentKeyI key) throws Exception {
-		return ((NodeComponent) this.owner).removeSync(computationURI, key);
+		return ((AsyncNodeComponent) this.owner).removeSync(computationURI, key);
 	}
 
 	@Override
 	public void clearComputation(String computationURI) throws Exception {
-		((NodeComponent) this.owner).clearComputation(computationURI);
+		((AsyncNodeComponent) this.owner).clearComputation(computationURI);
 	}
 
     

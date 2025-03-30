@@ -18,22 +18,22 @@ public class DHTCVM extends AbstractCVM {
     	String uri_facade = "f1";
     	String uri_client = "c1";
    
-        BCMContentNodeCompositeEndPoint dht_node =
-        		new BCMContentNodeCompositeEndPoint();
+        BCMAsyncContentNodeCompositeEndPoint dht_node =
+        		new BCMAsyncContentNodeCompositeEndPoint();
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
 		ConcreteBCMEndPoint<DHTServicesCI> dht_client =
         		 new ConcreteBCMEndPoint(DHTServicesCI.class, DHTServicesCI.class, uri_client);
         
         
-        BCMContentNodeCompositeEndPoint[] endPointsNode = new BCMContentNodeCompositeEndPoint[NB_NODES];
+        BCMAsyncContentNodeCompositeEndPoint[] endPointsNode = new BCMAsyncContentNodeCompositeEndPoint[NB_NODES];
         
-        endPointsNode[0] = new BCMContentNodeCompositeEndPoint();
-        endPointsNode[1] = new BCMContentNodeCompositeEndPoint();
+        endPointsNode[0] = new BCMAsyncContentNodeCompositeEndPoint();
+        endPointsNode[1] = new BCMAsyncContentNodeCompositeEndPoint();
         
         for(int i=0; i<NB_NODES; i++) {
         	String uri =  AbstractComponent.createComponent(
-					NodeComponent.class.getCanonicalName(),
+					AsyncNodeComponent.class.getCanonicalName(),
 					new Object[] {
 						"node"+i,
 						i*SIZE_NODES, // index
@@ -44,16 +44,16 @@ public class DHTCVM extends AbstractCVM {
 					});
         }
         
-      //Composant Facade
-	String uri3 = AbstractComponent.createComponent(
-			FacadeComponent.class.getCanonicalName(),
+        //Composant Facade
+        String uri3 = AbstractComponent.createComponent(
+			FacadeAsyncComponent.class.getCanonicalName(),
 			new Object[] {
 					uri_facade,
 					dht_client.copyWithSharable(),
 					dht_node.copyWithSharable()
 			});
 	
-	String uri4 = AbstractComponent.createComponent(
+        String uri4 = AbstractComponent.createComponent(
 			Client.class.getCanonicalName(),
 			new Object[] {
 					uri_client,

@@ -34,12 +34,12 @@ public class FacadeAsyncComponent extends AbstractComponent
 	implements ResultReceptionCI{
 
 	private BCMAsyncContentNodeCompositeEndPoint server_edp;
-	private ConcreteAsyncBCMEndPoint<DHTServicesCI> client_edp;
+	private ConcreteBCMEndPoint<DHTServicesCI> client_edp;
 	protected final ResultEndPoint caller;
 	protected final ConcurrentHashMap<String, CompletableFuture<ContentDataI>> pendingResults = new ConcurrentHashMap<>();
 
     protected FacadeAsyncComponent(
-    		String uri, ConcreteAsyncBCMEndPoint<DHTServicesCI> client_edp , 
+    		String uri, ConcreteBCMEndPoint<DHTServicesCI> client_edp , 
     		BCMAsyncContentNodeCompositeEndPoint server_edp) throws Exception {
 
 		super(1, 0);
@@ -48,7 +48,7 @@ public class FacadeAsyncComponent extends AbstractComponent
         this.client_edp = client_edp;
         this.server_edp = server_edp;
         client_edp.initialiseServerSide(this);
-        this.traceMessage("FacadeComponent initialisé" );
+        this.traceMessage("FacadeAsyncComponent initialisé" );
     }
 
     @Override
@@ -59,13 +59,13 @@ public class FacadeAsyncComponent extends AbstractComponent
 			e.printStackTrace();
 		}
         super.start();
-        this.traceMessage("FacadeComponent démarré.");
+        this.traceMessage("FacadeAsyncComponent démarré.");
     }
 
     @Override
     public void finalise() throws Exception {
     	server_edp.cleanUpClientSide();
-        this.traceMessage("FacadeComponent se termine...");
+        this.traceMessage("FacadeAsyncComponent se termine...");
         super.finalise();
     }
 
@@ -78,7 +78,6 @@ public class FacadeAsyncComponent extends AbstractComponent
 	public <CI extends ResultReceptionCI>ContentDataI get(ContentKeyI key) throws Exception {
 		String computationURI = URIGenerator.generateURI();
 		CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
-		//TODO il faut que le endpoint mette correctement dans le future.
 		pendingResults.put(computationURI, cfuture);
 		server_edp.getContentAccessEndpoint().getClientSideReference().get(computationURI, key, caller);
 		ContentDataI res = cfuture.get();
