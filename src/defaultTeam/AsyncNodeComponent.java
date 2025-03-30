@@ -119,7 +119,9 @@ public class AsyncNodeComponent extends AbstractComponent {
 		
 			if ( interval.in(h) ) {
 				ContentDataI result = table.get(key);
+
 		        caller.getClientSideReference().acceptResult(computationURI, result);
+
 			}
 			else {
 				if (visited.containsKey(computationURI)) {

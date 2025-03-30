@@ -47,7 +47,10 @@ public class FacadeAsyncComponent extends AbstractComponent
 
         this.client_edp = client_edp;
         this.server_edp = server_edp;
-        client_edp.initialiseServerSide(this);
+        
+        // FIXME
+        caller.initialiseClientSide(this);
+        
         this.traceMessage("FacadeAsyncComponent initialisé" );
     }
 
