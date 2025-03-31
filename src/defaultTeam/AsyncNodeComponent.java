@@ -184,9 +184,10 @@ public class AsyncNodeComponent extends AbstractComponent {
     
     @SuppressWarnings("unchecked")
 	public <R extends Serializable> void map(String computationURI, SelectorI selector, ProcessorI<R> processor) throws Exception {
-    	System.out.println("Map");
 		if (computationURI == null || computationURI.isEmpty() || selector == null || processor == null) 
-	        throw new IllegalArgumentException("Parametre(s) de mapSync null ");    		
+	        throw new IllegalArgumentException("Parametre(s) de mapSync null "); 
+		
+		this.traceMessage("----MAP------\n");
 		
 		if (visitedMap.containsKey(computationURI)) return;
 		visitedMap.put(computationURI, true);
@@ -196,6 +197,7 @@ public class AsyncNodeComponent extends AbstractComponent {
         		.map(processor);
         streamMap.put(computationURI, mapResults);
         
+        this.traceMessage("- Passe au noeud suivant\n");
         server_edp.getMapReduceEndpoint().getClientSideReference().map(computationURI, selector, processor);
 	}
 
@@ -203,17 +205,19 @@ public class AsyncNodeComponent extends AbstractComponent {
 	public <CI extends MapReduceResultReceptionCI, A extends Serializable, R> void reduce(
 			String computationURI, ReductorI<A, R> reductor, 
 			CombinatorI<A> combinator, A currentAcc, EndPointI<CI> caller) throws Exception {
-		System.out.println("Reduce");
+		this.traceMessage("----REDUCE------\n");
 
 		
-		if (computationURI == null || computationURI.isEmpty() || reductor == null || combinator == null) {
+		if (computationURI == null || computationURI.isEmpty() || reductor == null || combinator == null || caller == null || currentAcc == null) {
 	        throw new IllegalArgumentException("Parametre(s) de reduceSync null ");    
 		}
 		
 		if (visitedReduce.containsKey(computationURI)) {
 			caller.initialiseClientSide(this);
-			caller.getClientSideReference().acceptResult(computationURI, getURI(), currentAcc);		
+			this.traceMessage("- ACCEPT\n");
+			caller.getClientSideReference().acceptResult(computationURI, getURI(), currentAcc);	
 			caller.cleanUpClientSide();
+			return;
 		}
 		visitedReduce.put(computationURI, true);
 		
@@ -226,9 +230,8 @@ public class AsyncNodeComponent extends AbstractComponent {
 			throw new IllegalStateException("Pas de resultats trouvé pour computationUri: " + computationURI);
 		
 		A reduceResult = mapResults.reduce(currentAcc, reduct, combinator);
+		this.traceMessage("- Passe au noeud suivant\n");
 		server_edp.getMapReduceEndpoint().getClientSideReference().reduce(computationURI, reductor, combinator, currentAcc, reduceResult, caller);
-		
-		caller.getClientSideReference().acceptResult(computationURI, getURI(), reduceResult);
 	}
     
     

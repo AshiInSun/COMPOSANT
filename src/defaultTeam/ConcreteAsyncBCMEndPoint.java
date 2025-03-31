@@ -5,8 +5,6 @@ import defaultTeam.port.DHTAsyncContentAccessOutboundPort;
 import defaultTeam.port.DHTAsyncMapReduceConnector;
 import defaultTeam.port.DHTAsyncMapReduceInboundPort;
 import defaultTeam.port.DHTAsyncMapReduceOutboundPort;
-import defaultTeam.port.DHTContentAccessConnector;
-import defaultTeam.port.DHTMapReduceConnector;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.AbstractPort;
 import fr.sorbonne_u.components.ports.AbstractInboundPort;

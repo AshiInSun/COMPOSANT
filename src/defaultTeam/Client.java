@@ -91,7 +91,6 @@ public class Client extends AbstractComponent {
         ReductorI<int[], Integer> reductor = (acc, age) -> new int[]{acc[0] + age, acc[1] + 1};
         CombinatorI<int[]> combinator = (acc1, acc2) -> new int[]{acc1[0] + acc2[0], acc1[1] + acc2[1]};
         int[] initialAcc = new int[]{0, 0};
-        int[] identityAcc = new int[]{0, 0};
         int[] res = dht_edp.getClientSideReference().mapReduce(selector, processor, reductor, combinator, initialAcc);
         double ageMoyen = (res[1] == 0) ? 0 : (double) res[0] / res[1];
         this.traceMessage("L'âge moyen est: " + ageMoyen + "\n");

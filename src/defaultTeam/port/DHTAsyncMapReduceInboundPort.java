@@ -9,6 +9,7 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 import defaultTeam.AsyncNodeComponent;
+import defaultTeam.NodeComponent;
 
 import java.io.Serializable;
 
@@ -39,5 +40,8 @@ public class DHTAsyncMapReduceInboundPort extends DHTMapReduceInboundPort implem
             e.printStackTrace();
         }
 	}
-
+	@Override
+	public void clearMapReduceComputation(String computationURI) throws Exception {
+		((AsyncNodeComponent) this.owner).clearMapReduceComputation(computationURI);
+	} 
 }

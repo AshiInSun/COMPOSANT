@@ -3,13 +3,9 @@ import java.io.Serializable;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceResultReceptionCI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
-
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.OfferedInterfaces;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
-import fr.sorbonne_u.components.endpoints.EndPoint;
-import fr.sorbonne_u.components.endpoints.EndPointI;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
 import fr.sorbonne_u.components.exceptions.ConnectionException;
@@ -127,7 +123,6 @@ public class FacadeAsyncComponent extends AbstractComponent
 			ReductorI<A, R> reductor, 
 			CombinatorI<A> combinator, 
 			A initialAcc) throws Exception {
-		System.out.println("FACADE1");
 		if (selector == null || processor == null || reductor == null || combinator == null || initialAcc == null ) 
 			throw new IllegalArgumentException("Parametre(s) de mapReduce null "); 
 		

@@ -5,6 +5,7 @@ import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.endpoints.EndPointI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceResultReceptionCI;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
@@ -31,4 +32,8 @@ public class DHTAsyncMapReduceOutboundPort extends DHTMapReduceOutboundPort impl
 			throws Exception {
         ((MapReduceCI)this.getConnector()).reduce(computationURI, reductor, combinator, identityAcc, currentAcc, callerNode);
     }
+    @Override
+    public void clearMapReduceComputation(String computationURI) throws Exception {
+		((MapReduceCI) this.getConnector()).clearMapReduceComputation(computationURI);
+	}
 }

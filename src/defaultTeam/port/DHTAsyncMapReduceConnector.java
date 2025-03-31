@@ -3,6 +3,7 @@ package defaultTeam.port;
 
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceResultReceptionCI;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
 import fr.sorbonne_u.components.endpoints.EndPointI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
@@ -24,4 +25,8 @@ public class DHTAsyncMapReduceConnector extends DHTMapReduceConnector implements
 			throws Exception {
         ((MapReduceCI)this.offering).reduce(computationURI, reductor, combinator, identityAcc, currentAcc, callerNode);
     }
+    @Override
+	public void clearMapReduceComputation(String computationURI) throws Exception {
+		((MapReduceCI) this.offering).clearMapReduceComputation(computationURI);
+	}
 }
