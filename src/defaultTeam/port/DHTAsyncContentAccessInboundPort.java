@@ -1,5 +1,6 @@
 package defaultTeam.port;
-import defaultTeam.AsyncNodeComponent;
+import defaultTeam.NodeAsyncComponent;
+import defaultTeam.port.sync.DHTContentAccessInboundPort;
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.endpoints.EndPointI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessCI;
@@ -19,7 +20,7 @@ public class DHTAsyncContentAccessInboundPort extends DHTContentAccessInboundPor
 			throws Exception {
 		this.getOwner().runTask(o -> {
 		    try {
-		        ((AsyncNodeComponent) o).get(computationURI, key, caller);
+		        ((NodeAsyncComponent) o).get(computationURI, key, caller);
 		    } catch (Exception e) {
 		        e.printStackTrace();
 		    }
@@ -31,7 +32,7 @@ public class DHTAsyncContentAccessInboundPort extends DHTContentAccessInboundPor
 			EndPointI<I> caller) throws Exception {
 		this.getOwner().runTask(o -> {
 	        try {
-	            ((AsyncNodeComponent) o).put(computationURI, key, value, caller);
+	            ((NodeAsyncComponent) o).put(computationURI, key, value, caller);
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        }
@@ -44,7 +45,7 @@ public class DHTAsyncContentAccessInboundPort extends DHTContentAccessInboundPor
 			throws Exception {
 		this.getOwner().runTask(o -> {
 	        try {
-	            ((AsyncNodeComponent) o).remove(computationURI, key, caller);
+	            ((NodeAsyncComponent) o).remove(computationURI, key, caller);
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        }	

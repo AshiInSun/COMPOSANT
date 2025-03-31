@@ -13,6 +13,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 
 import java.io.Serializable;
 
+import defaultTeam.port.sync.DHTMapReduceOutboundPort;
+
 public class DHTAsyncMapReduceOutboundPort extends DHTMapReduceOutboundPort implements MapReduceCI {
     private static final long serialVersionUID = 1L;
     

@@ -1,4 +1,4 @@
-package defaultTeam.port;
+package defaultTeam.port.sync;
 
 import fr.sorbonne_u.components.connectors.AbstractConnector;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;

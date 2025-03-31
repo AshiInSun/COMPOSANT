@@ -1,6 +1,7 @@
-package defaultTeam;
+package defaultTeam.old;
 import java.io.Serializable;
 
+import defaultTeam.endpoints.ConcreteBCMEndPoint;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.OfferedInterfaces;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;

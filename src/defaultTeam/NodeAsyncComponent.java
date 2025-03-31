@@ -30,12 +30,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
+
 @OfferedInterfaces(offered = {ContentAccessSyncCI.class, MapReduceSyncCI.class, 
         ContentAccessCI.class, MapReduceCI.class, 
         DHTServicesCI.class})
 @RequiredInterfaces(required = {ContentAccessSyncCI.class, MapReduceSyncCI.class, 
         ContentAccessCI.class, MapReduceCI.class})
-public class AsyncNodeComponent extends AbstractComponent {
+public class NodeAsyncComponent extends AbstractComponent {
 	
 	private IntInterval interval;
 	private String uri;
@@ -52,7 +54,7 @@ public class AsyncNodeComponent extends AbstractComponent {
     BCMAsyncContentNodeCompositeEndPoint server_edp; //the next
     BCMAsyncContentNodeCompositeEndPoint dht_edp; //only for the first node : connexion to facade
     
-    protected AsyncNodeComponent(String uri, int debut, int fin,
+    protected NodeAsyncComponent(String uri, int debut, int fin,
 		BCMAsyncContentNodeCompositeEndPoint dht_edp,
 		BCMAsyncContentNodeCompositeEndPoint client_edp,
 		BCMAsyncContentNodeCompositeEndPoint server_edp) throws Exception {
@@ -147,8 +149,10 @@ public class AsyncNodeComponent extends AbstractComponent {
 		if ( interval.in(h) ) {
 			ContentDataI result =  table.put(key, value);
 			caller.initialiseClientSide(this);
+			
 	        caller.getClientSideReference().acceptResult(computationURI, result);
-	        caller.cleanUpClientSide();
+	        caller.cleanUpClientSide();;
+	        return;
 		}
 		else {
 			if (visited.containsKey(computationURI)){
@@ -188,7 +192,7 @@ public class AsyncNodeComponent extends AbstractComponent {
     	assert computationURI != null && !computationURI.isEmpty() && selector != null && processor != null :
     		"Parametre(s) de map non valides";
 		
-		this.traceMessage("----MAP------\n");
+		this.traceMessage("Execute map...\n");
 		
 		if (visitedMap.containsKey(computationURI)) return;
 		visitedMap.put(computationURI, true);
@@ -210,11 +214,11 @@ public class AsyncNodeComponent extends AbstractComponent {
 		assert computationURI != null && !computationURI.isEmpty() && reductor != null && combinator != null && caller != null :
     		"Parametre(s) de reduce non valides";
 				
-		this.traceMessage("----REDUCE------\n");
+		this.traceMessage("Execute reduce...\n");
 
 		if (visitedReduce.containsKey(computationURI)) {
 			caller.initialiseClientSide(this);
-			this.traceMessage("- ACCEPT\n");
+			this.traceMessage("- Appel acceptResult\n");
 			caller.getClientSideReference().acceptResult(computationURI, getURI(), currentAcc);	
 			caller.cleanUpClientSide();
 			return;

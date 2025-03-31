@@ -11,6 +11,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 import java.io.Serializable;
 
+import defaultTeam.port.sync.DHTMapReduceConnector;
+
 public class DHTAsyncMapReduceConnector extends DHTMapReduceConnector implements MapReduceCI {
 
     @Override

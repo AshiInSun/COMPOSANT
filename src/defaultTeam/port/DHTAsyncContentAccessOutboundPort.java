@@ -1,6 +1,7 @@
 package defaultTeam.port;
 
 
+import defaultTeam.port.sync.DHTContentAccessOutboundPort;
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.endpoints.EndPointI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessCI;

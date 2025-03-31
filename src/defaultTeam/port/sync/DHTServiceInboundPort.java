@@ -1,9 +1,9 @@
-package defaultTeam.port;
+package defaultTeam.port.sync;
 
 import java.io.Serializable;
 
 import defaultTeam.FacadeAsyncComponent;
-import defaultTeam.FacadeComponent;
+import defaultTeam.old.FacadeComponent;
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.ports.AbstractInboundPort;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;

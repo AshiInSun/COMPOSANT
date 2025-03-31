@@ -1,4 +1,4 @@
-package defaultTeam;
+package defaultTeam.old;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.OfferedInterfaces;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;

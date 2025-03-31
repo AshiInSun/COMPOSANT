@@ -1,4 +1,5 @@
-package defaultTeam;
+package defaultTeam.old;
+import defaultTeam.endpoints.ConcreteBCMEndPoint;
 import fr.sorbonne_u.components.AbstractPort;
 import fr.sorbonne_u.components.endpoints.BCMCompositeEndPoint;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.endpoints.ContentNodeBaseCompositeEndPointI;

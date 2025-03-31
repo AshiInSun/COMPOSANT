@@ -8,8 +8,9 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
-import defaultTeam.AsyncNodeComponent;
-import defaultTeam.NodeComponent;
+import defaultTeam.NodeAsyncComponent;
+import defaultTeam.old.NodeComponent;
+import defaultTeam.port.sync.DHTMapReduceInboundPort;
 
 import java.io.Serializable;
 
@@ -25,7 +26,7 @@ public class DHTAsyncMapReduceInboundPort extends DHTMapReduceInboundPort implem
 			SelectorI selector, ProcessorI<R> processor) throws Exception {
 		this.getOwner().runTask(o -> {
 	        try {
-	            ((AsyncNodeComponent) o).map(computationURI, selector, processor);
+	            ((NodeAsyncComponent) o).map(computationURI, selector, processor);
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        }
@@ -38,7 +39,7 @@ public class DHTAsyncMapReduceInboundPort extends DHTMapReduceInboundPort implem
 			throws Exception {
 		this.getOwner().runTask(o -> {
 	        try {
-	            ((AsyncNodeComponent) o).reduce(computationURI, reductor, combinator, currentAcc, callerNode);
+	            ((NodeAsyncComponent) o).reduce(computationURI, reductor, combinator, currentAcc, callerNode);
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        }
@@ -48,7 +49,7 @@ public class DHTAsyncMapReduceInboundPort extends DHTMapReduceInboundPort implem
 	public void clearMapReduceComputation(String computationURI) throws Exception {
 		this.getOwner().runTask(o -> {
 	        try {
-	        	((AsyncNodeComponent) o).clearMapReduceComputation(computationURI);
+	        	((NodeAsyncComponent) o).clearMapReduceComputation(computationURI);
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        }

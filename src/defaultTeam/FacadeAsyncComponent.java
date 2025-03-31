@@ -3,6 +3,11 @@ import java.io.Serializable;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceResultReceptionCI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+
+import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
+import defaultTeam.endpoints.ConcreteBCMEndPoint;
+import defaultTeam.endpoints.MapReduceResultEndPoint;
+import defaultTeam.endpoints.ResultEndPoint;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.OfferedInterfaces;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
@@ -34,8 +39,10 @@ public class FacadeAsyncComponent extends AbstractComponent {
 	private ConcreteBCMEndPoint<DHTServicesCI> client_edp;
 	protected final ResultEndPoint caller;
 	protected final MapReduceResultEndPoint mapreduce_caller;
-	protected final ConcurrentHashMap<String, CompletableFuture<ContentDataI>> pendingResults = new ConcurrentHashMap<>();
-	protected final ConcurrentHashMap<String, CompletableFuture<?>> pendingResultsMapReduce = new ConcurrentHashMap<>();
+	protected final ConcurrentHashMap<String, CompletableFuture<ContentDataI>> pendingResults 
+		= new ConcurrentHashMap<>();
+	protected final ConcurrentHashMap<String, CompletableFuture<?>> pendingResultsMapReduce 
+		= new ConcurrentHashMap<>();
 
     protected FacadeAsyncComponent(
     		String uri, ConcreteBCMEndPoint<DHTServicesCI> client_edp , 
@@ -73,9 +80,7 @@ public class FacadeAsyncComponent extends AbstractComponent {
     @Override
     public void finalise() throws Exception {
     	server_edp.cleanUpClientSide();
-    	assert caller.clientSideClean();
     	caller.cleanUpServerSide();
-    	assert mapreduce_caller.clientSideClean();
     	mapreduce_caller.cleanUpServerSide();
         this.traceMessage("FacadeAsyncComponent se termine...");
         super.finalise();
@@ -136,7 +141,7 @@ public class FacadeAsyncComponent extends AbstractComponent {
 				computationURI, reductor, combinator, initialAcc, identityAcc,mapreduce_caller.copyWithSharable()
 				);
 		A res = cfuture.get();
-		server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);		
+		server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);
 		return (A) res;
 	}
 	
@@ -149,7 +154,8 @@ public class FacadeAsyncComponent extends AbstractComponent {
         }
 	}
 	public void acceptResult(String computationURI, String emitterId, Serializable acc) throws Exception {
-		CompletableFuture<Serializable> future = (CompletableFuture<Serializable>) pendingResultsMapReduce.remove(computationURI);
+		CompletableFuture<Serializable> future = 
+				(CompletableFuture<Serializable>) pendingResultsMapReduce.remove(computationURI);
         if (future != null) {
             future.complete((Serializable) acc);
         } else {

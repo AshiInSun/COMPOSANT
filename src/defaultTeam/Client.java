@@ -14,6 +14,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 
 import java.util.concurrent.CountDownLatch;
 
+import defaultTeam.endpoints.ConcreteBCMEndPoint;
+
 @RequiredInterfaces(required = {DHTServicesCI.class})
 public class Client extends AbstractComponent {
     private static final String NOM = "NOM";
@@ -50,24 +52,15 @@ public class Client extends AbstractComponent {
 	        ContentDataI p3 = new Personne("Delta", 35);
 	
 	        // Ajout des données de manière asynchrone avec un CountDownLatch pour synchronisation
-	        CountDownLatch latch = new CountDownLatch(3);
 	        this.traceMessage("Insertion des données (asynchrone)...\n");
-	
 	        dht_edp.getClientSideReference().put(k1, p1);
 	        this.traceMessage("Donnée insérée pour k1\n");
-            latch.countDown();
 
-	
 	        dht_edp.getClientSideReference().put(k2, p2);
             this.traceMessage("Donnée insérée pour k2\n");
-            latch.countDown();
 	
 	        dht_edp.getClientSideReference().put(k3, p3);
             this.traceMessage("Donnée insérée pour k3\n");
-            latch.countDown();
-            
-	        // Attendre que toutes les insertions soient terminées
-	        latch.await();
 
         // Récupération des données de manière asynchrone
         this.traceMessage("Récupération des données (asynchrone)...\n");

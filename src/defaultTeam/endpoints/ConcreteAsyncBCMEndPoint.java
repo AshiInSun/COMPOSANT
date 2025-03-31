@@ -1,4 +1,4 @@
-package defaultTeam;
+package defaultTeam.endpoints;
 import defaultTeam.port.DHTAsyncContentAccessConnector;
 import defaultTeam.port.DHTAsyncContentAccessInboundPort;
 import defaultTeam.port.DHTAsyncContentAccessOutboundPort;

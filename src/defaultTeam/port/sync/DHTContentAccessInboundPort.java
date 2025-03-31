@@ -1,7 +1,7 @@
-package defaultTeam.port;
+package defaultTeam.port.sync;
 
-import defaultTeam.AsyncNodeComponent;
-import defaultTeam.NodeComponent;
+import defaultTeam.NodeAsyncComponent;
+import defaultTeam.old.NodeComponent;
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.ports.AbstractInboundPort;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
@@ -17,7 +17,7 @@ public class DHTContentAccessInboundPort extends AbstractInboundPort implements 
 
     @Override
 	public ContentDataI getSync(String computationURI, ContentKeyI key) throws Exception {
-		return ((AsyncNodeComponent) this.owner).getSync(computationURI, key);
+		return ((NodeAsyncComponent) this.owner).getSync(computationURI, key);
 	}
 
 	@Override
@@ -26,17 +26,17 @@ public class DHTContentAccessInboundPort extends AbstractInboundPort implements 
 		ContentKeyI key, 
 		ContentDataI value) throws Exception {
 		
-		return ((AsyncNodeComponent) this.owner).putSync(computationURI, key, value);
+		return ((NodeAsyncComponent) this.owner).putSync(computationURI, key, value);
 	}
 
 	@Override
 	public ContentDataI removeSync(String computationURI, ContentKeyI key) throws Exception {
-		return ((AsyncNodeComponent) this.owner).removeSync(computationURI, key);
+		return ((NodeAsyncComponent) this.owner).removeSync(computationURI, key);
 	}
 
 	@Override
 	public void clearComputation(String computationURI) throws Exception {
-		((AsyncNodeComponent) this.owner).clearComputation(computationURI);
+		((NodeAsyncComponent) this.owner).clearComputation(computationURI);
 	}
 
     

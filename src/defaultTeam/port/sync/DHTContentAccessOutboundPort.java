@@ -1,4 +1,4 @@
-package defaultTeam.port;
+package defaultTeam.port.sync;
 
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.ports.AbstractOutboundPort;

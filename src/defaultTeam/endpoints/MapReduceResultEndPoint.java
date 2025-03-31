@@ -1,4 +1,4 @@
-package defaultTeam;
+package defaultTeam.endpoints;
 
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceResultReceptionCI;
 import defaultTeam.port.MapReduceResultReceptionConnector;

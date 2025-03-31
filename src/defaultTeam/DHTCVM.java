@@ -1,8 +1,11 @@
 package defaultTeam;
 
+import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
+import defaultTeam.endpoints.ConcreteBCMEndPoint;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.cvm.AbstractCVM;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
+import fr.sorbonne_u.exceptions.VerboseException;
 
 public class DHTCVM extends AbstractCVM {
 	
@@ -26,7 +29,8 @@ public class DHTCVM extends AbstractCVM {
         		 new ConcreteBCMEndPoint(DHTServicesCI.class, DHTServicesCI.class, uri_client);
         
         
-        BCMAsyncContentNodeCompositeEndPoint[] endPointsNode = new BCMAsyncContentNodeCompositeEndPoint[NB_NODES];
+        BCMAsyncContentNodeCompositeEndPoint[] endPointsNode = 
+        		new BCMAsyncContentNodeCompositeEndPoint[NB_NODES];
         
         endPointsNode[0] = new BCMAsyncContentNodeCompositeEndPoint();
         endPointsNode[1] = new BCMAsyncContentNodeCompositeEndPoint();
@@ -36,7 +40,7 @@ public class DHTCVM extends AbstractCVM {
         
         for(int i=0; i<NB_NODES; i++) {
         	String uri =  AbstractComponent.createComponent(
-					AsyncNodeComponent.class.getCanonicalName(),
+					NodeAsyncComponent.class.getCanonicalName(),
 					new Object[] {
 						"node"+i,
 						i*SIZE_NODES, // index
@@ -72,9 +76,10 @@ public class DHTCVM extends AbstractCVM {
     }
 
     public static void main(String[] args) {
+    	VerboseException.VERBOSE = true;
         try {
             DHTCVM cvm = new DHTCVM();
-            cvm.startStandardLifeCycle(10000); // Exécution du système
+            cvm.startStandardLifeCycle(100000); // Exécution du système
             System.exit(0);
         } catch (Exception e) {
             e.printStackTrace();

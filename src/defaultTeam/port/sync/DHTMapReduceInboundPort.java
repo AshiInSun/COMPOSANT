@@ -1,8 +1,8 @@
-package defaultTeam.port;
+package defaultTeam.port.sync;
 
 import java.io.Serializable;
 
-import defaultTeam.NodeComponent;
+import defaultTeam.old.NodeComponent;
 import fr.sorbonne_u.components.ComponentI;
 import fr.sorbonne_u.components.ports.AbstractInboundPort;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
