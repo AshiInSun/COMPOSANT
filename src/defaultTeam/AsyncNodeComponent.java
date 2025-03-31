@@ -184,8 +184,9 @@ public class AsyncNodeComponent extends AbstractComponent {
     
     @SuppressWarnings("unchecked")
 	public <R extends Serializable> void map(String computationURI, SelectorI selector, ProcessorI<R> processor) throws Exception {
-		if (computationURI == null || computationURI.isEmpty() || selector == null || processor == null) 
-	        throw new IllegalArgumentException("Parametre(s) de mapSync null "); 
+
+    	assert computationURI != null && !computationURI.isEmpty() && selector != null && processor != null :
+    		"Parametre(s) de map non valides";
 		
 		this.traceMessage("----MAP------\n");
 		
@@ -205,13 +206,12 @@ public class AsyncNodeComponent extends AbstractComponent {
 	public <CI extends MapReduceResultReceptionCI, A extends Serializable, R> void reduce(
 			String computationURI, ReductorI<A, R> reductor, 
 			CombinatorI<A> combinator, A currentAcc, EndPointI<CI> caller) throws Exception {
+
+		assert computationURI != null && !computationURI.isEmpty() && reductor != null && combinator != null && caller != null :
+    		"Parametre(s) de reduce non valides";
+				
 		this.traceMessage("----REDUCE------\n");
 
-		
-		if (computationURI == null || computationURI.isEmpty() || reductor == null || combinator == null || caller == null || currentAcc == null) {
-	        throw new IllegalArgumentException("Parametre(s) de reduceSync null ");    
-		}
-		
 		if (visitedReduce.containsKey(computationURI)) {
 			caller.initialiseClientSide(this);
 			this.traceMessage("- ACCEPT\n");
@@ -282,8 +282,9 @@ public class AsyncNodeComponent extends AbstractComponent {
 	}
 
 	public void clearComputation(String computationURI) throws Exception {
-		if (computationURI == null || computationURI.isEmpty() )
-			throw new IllegalArgumentException("ComputationURI null");
+		
+		assert computationURI != null && !computationURI.isEmpty() :
+    		"computationURI vide dans clearComputation";
 		
 		if (visited.containsKey(computationURI)) {
 			visited.remove(computationURI);
@@ -292,8 +293,9 @@ public class AsyncNodeComponent extends AbstractComponent {
 	}
 	
 	public void clearMapReduceComputation(String computationURI) throws Exception {
-		if (computationURI == null || computationURI.isEmpty() )
-			throw new IllegalArgumentException("ComputationURI null");
+
+		assert computationURI != null && !computationURI.isEmpty() :
+    		"computationURI vide dans clearMapReduceComputation";
 		
 		if (visitedMap.containsKey(computationURI) && visitedReduce.containsKey(computationURI)){
 				streamMap.remove(computationURI);
@@ -305,8 +307,9 @@ public class AsyncNodeComponent extends AbstractComponent {
 	
 	@SuppressWarnings("unchecked")
 	public <R extends Serializable> void mapSync(String computationURI, SelectorI selector, ProcessorI<R> processor) throws Exception {
-		if (computationURI == null || computationURI.isEmpty() || selector == null || processor == null) 
-	        throw new IllegalArgumentException("Parametre(s) de mapSync null ");    		
+
+		assert computationURI != null && !computationURI.isEmpty() && selector != null && processor != null :
+    		"Parametre(s) de mapSync non valides";
 		
 		synchronized (visitedMap) {
 			if (visitedMap.containsKey(computationURI)) return;
@@ -324,10 +327,11 @@ public class AsyncNodeComponent extends AbstractComponent {
 
 	@SuppressWarnings("unchecked")
 	public <A extends Serializable, R> A reduceSync(String computationURI, ReductorI<A, R> reductor, CombinatorI<A> combinator, A currentAcc)
-			throws Exception {
-		if (computationURI == null || computationURI.isEmpty() || reductor == null || combinator == null) {
-	        throw new IllegalArgumentException("Parametre(s) de reduceSync null ");    
-		}
+			throws Exception {   
+	        
+        assert computationURI != null && !computationURI.isEmpty() && reductor != null && combinator != null :
+    		"Parametre(s) de reduceSync non valides";
+
 		
 		synchronized (visitedReduce) {
 			if (visitedReduce.containsKey(computationURI)) return currentAcc;		

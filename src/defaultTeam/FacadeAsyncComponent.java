@@ -24,12 +24,11 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 import fr.sorbonne_u.cps.mapreduce.utils.URIGenerator;
 
 @OfferedInterfaces(offered = {
-		DHTServicesCI.class})
+		DHTServicesCI.class, ResultReceptionCI.class, MapReduceResultReceptionCI.class})
 @RequiredInterfaces(required = {
 		DHTServicesCI.class, ContentAccessSyncCI.class, MapReduceSyncCI.class,
 		MapReduceCI.class, ContentAccessCI.class})
-public class FacadeAsyncComponent extends AbstractComponent 
-	implements ResultReceptionCI, MapReduceResultReceptionCI{
+public class FacadeAsyncComponent extends AbstractComponent {
 
 	private BCMAsyncContentNodeCompositeEndPoint server_edp;
 	private ConcreteBCMEndPoint<DHTServicesCI> client_edp;
@@ -76,6 +75,8 @@ public class FacadeAsyncComponent extends AbstractComponent
     	server_edp.cleanUpClientSide();
     	assert caller.clientSideClean();
     	caller.cleanUpServerSide();
+    	assert mapreduce_caller.clientSideClean();
+    	mapreduce_caller.cleanUpServerSide();
         this.traceMessage("FacadeAsyncComponent se termine...");
         super.finalise();
     }
@@ -138,8 +139,7 @@ public class FacadeAsyncComponent extends AbstractComponent
 		server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);		
 		return (A) res;
 	}
-
-	@Override
+	
 	public void acceptResult(String computationURI, Serializable result) throws Exception {
 		CompletableFuture<ContentDataI> future = pendingResults.remove(computationURI);
         if (future != null) {
@@ -148,7 +148,6 @@ public class FacadeAsyncComponent extends AbstractComponent
             throw new Exception("No pending request found for computation URI: " + computationURI);
         }
 	}
-	@Override
 	public void acceptResult(String computationURI, String emitterId, Serializable acc) throws Exception {
 		CompletableFuture<Serializable> future = (CompletableFuture<Serializable>) pendingResultsMapReduce.remove(computationURI);
         if (future != null) {
@@ -157,5 +156,4 @@ public class FacadeAsyncComponent extends AbstractComponent
             throw new Exception("No pending request found for computation URI: " + computationURI);
         }
 	}
-	
 }
