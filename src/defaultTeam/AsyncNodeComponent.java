@@ -119,7 +119,6 @@ public class AsyncNodeComponent extends AbstractComponent {
 		
 			if ( interval.in(h) ) {
 				ContentDataI result = table.get(key);
-
 		        caller.getClientSideReference().acceptResult(computationURI, result);
 
 			}
@@ -221,7 +220,7 @@ public class AsyncNodeComponent extends AbstractComponent {
 		A reduceResult = mapResults.reduce(currentAcc, reduct, combinator);
 		
 		server_edp.getMapReduceEndpoint().getClientSideReference().reduce(computationURI, reductor, combinator, currentAcc, reduceResult, caller);
-
+		
 		caller.getClientSideReference().acceptResult(computationURI, getURI(), reduceResult);
 	}
     

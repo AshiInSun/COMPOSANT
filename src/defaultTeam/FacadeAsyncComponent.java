@@ -48,9 +48,6 @@ public class FacadeAsyncComponent extends AbstractComponent
         this.client_edp = client_edp;
         this.server_edp = server_edp;
         
-        // FIXME
-        caller.initialiseClientSide(this);
-        
         this.traceMessage("FacadeAsyncComponent initialisé" );
     }
 
@@ -87,21 +84,30 @@ public class FacadeAsyncComponent extends AbstractComponent
 		server_edp.getContentAccessEndpoint().getClientSideReference().clearComputation(computationURI);
 		return res;
 	}
-
-	public ContentDataI put(ContentKeyI key, ContentDataI value) throws Exception {
+	
+	// FIXME
+	public <CI extends ResultReceptionCI>ContentDataI put(ContentKeyI key, ContentDataI value) throws Exception {
 		String computationURI = URIGenerator.generateURI();
-		ContentDataI res = server_edp.getContentAccessEndpoint().getClientSideReference().putSync(computationURI, key, value);
+		CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
+		pendingResults.put(computationURI, cfuture);
+		server_edp.getContentAccessEndpoint().getClientSideReference().put(computationURI, key, value, caller);
+		ContentDataI res = cfuture.get();
 		server_edp.getContentAccessEndpoint().getClientSideReference().clearComputation(computationURI);
 		return res;
 	}
-
+	
+	// FIXME
 	public ContentDataI remove(ContentKeyI key) throws Exception {
 		String computationURI = URIGenerator.generateURI();
-		ContentDataI res = server_edp.getContentAccessEndpoint().getClientSideReference().removeSync(computationURI, key);
+		CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
+		pendingResults.put(computationURI, cfuture);
+		server_edp.getContentAccessEndpoint().getClientSideReference().removeSync(computationURI, key);
+		ContentDataI res = cfuture.get();
 		server_edp.getContentAccessEndpoint().getClientSideReference().clearComputation(computationURI);
 		return res;
 	}
-
+	
+	// FIXME
 	public <R extends Serializable, A extends Serializable> A mapReduce(
 			SelectorI selector, 
 			ProcessorI<R> processor,
