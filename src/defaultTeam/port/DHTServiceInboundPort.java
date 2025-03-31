@@ -23,17 +23,38 @@ public class DHTServiceInboundPort extends AbstractInboundPort implements DHTSer
 
 	@Override
 	public ContentDataI get(ContentKeyI key) throws Exception {
-		return ((FacadeAsyncComponent) this.owner).get(key);
+		return this.getOwner().handleRequest(o -> {
+	        try {
+	            return ((FacadeAsyncComponent) o).get(key);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            return null; 
+	        }
+	    });
 	}
 
 	@Override
 	public ContentDataI put(ContentKeyI key, ContentDataI value) throws Exception {
-		return ((FacadeAsyncComponent) this.owner).put(key, value);
+		return this.getOwner().handleRequest(o -> {
+	        try {
+	        	return ((FacadeAsyncComponent) this.owner).put(key, value);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            return null; 
+	        }
+	    });
 	}
 
 	@Override
 	public ContentDataI remove(ContentKeyI key) throws Exception {
-		return ((FacadeAsyncComponent) this.owner).remove(key);
+		return this.getOwner().handleRequest(o -> {
+	        try {
+	        	return ((FacadeAsyncComponent) this.owner).remove(key);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            return null; 
+	        }
+	    });
 	}
 
 	@Override
@@ -43,8 +64,14 @@ public class DHTServiceInboundPort extends AbstractInboundPort implements DHTSer
 		ReductorI<A, R> reductor, 
 		CombinatorI<A> combinator, 
 		A initialAcc) throws Exception {
-		
-		return ((FacadeAsyncComponent) this.owner).mapReduce(selector, processor, reductor, combinator, initialAcc);
+		return this.getOwner().handleRequest(o -> {
+	        try {
+	        	return ((FacadeAsyncComponent) this.owner).mapReduce(selector, processor, reductor, combinator, initialAcc);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            return null; 
+	        }
+	    });	
 	}
 
     

@@ -17,33 +17,38 @@ public class DHTAsyncContentAccessInboundPort extends DHTContentAccessInboundPor
 	@Override
 	public <I extends ResultReceptionCI> void get(String computationURI, ContentKeyI key, EndPointI<I> caller)
 			throws Exception {
-
-	    try {
-	        ((AsyncNodeComponent) owner).get(computationURI, key, caller);
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
+		this.getOwner().runTask(o -> {
+		    try {
+		        ((AsyncNodeComponent) o).get(computationURI, key, caller);
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		    }
+		});
 	}
 
 	@Override
 	public <I extends ResultReceptionCI> void put(String computationURI, ContentKeyI key, ContentDataI value,
 			EndPointI<I> caller) throws Exception {
-        try {
-            ((AsyncNodeComponent) owner).put(computationURI, key, value, caller);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+		this.getOwner().runTask(o -> {
+	        try {
+	            ((AsyncNodeComponent) o).put(computationURI, key, value, caller);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+		});
 		
 	}
 
 	@Override
 	public <I extends ResultReceptionCI> void remove(String computationURI, ContentKeyI key, EndPointI<I> caller)
 			throws Exception {
-        try {
-            ((AsyncNodeComponent) owner).remove(computationURI, key, caller);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }	
+		this.getOwner().runTask(o -> {
+	        try {
+	            ((AsyncNodeComponent) o).remove(computationURI, key, caller);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }	
+		});
 	}
 
 }

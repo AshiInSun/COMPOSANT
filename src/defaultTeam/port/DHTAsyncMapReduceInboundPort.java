@@ -23,25 +23,35 @@ public class DHTAsyncMapReduceInboundPort extends DHTMapReduceInboundPort implem
 	@Override
 	public <R extends Serializable, I extends MapReduceResultReceptionCI> void map(String computationURI,
 			SelectorI selector, ProcessorI<R> processor) throws Exception {
-        try {
-            ((AsyncNodeComponent) owner).map(computationURI, selector, processor);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+		this.getOwner().runTask(o -> {
+	        try {
+	            ((AsyncNodeComponent) o).map(computationURI, selector, processor);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+		});
 	}
 
 	@Override
 	public <A extends Serializable, R, CI extends MapReduceResultReceptionCI> void reduce(String computationURI,
 			ReductorI<A, R> reductor, CombinatorI<A> combinator, A identityAcc, A currentAcc, EndPointI<CI> callerNode)
 			throws Exception {
-        try {
-            ((AsyncNodeComponent) owner).reduce(computationURI, reductor, combinator, currentAcc, callerNode);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+		this.getOwner().runTask(o -> {
+	        try {
+	            ((AsyncNodeComponent) o).reduce(computationURI, reductor, combinator, currentAcc, callerNode);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+		});
 	}
 	@Override
 	public void clearMapReduceComputation(String computationURI) throws Exception {
-		((AsyncNodeComponent) this.owner).clearMapReduceComputation(computationURI);
+		this.getOwner().runTask(o -> {
+	        try {
+	        	((AsyncNodeComponent) o).clearMapReduceComputation(computationURI);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+		});
 	} 
 }
