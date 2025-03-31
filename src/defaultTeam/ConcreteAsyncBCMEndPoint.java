@@ -53,7 +53,8 @@ public class ConcreteAsyncBCMEndPoint<CI extends fr.sorbonne_u.components.interf
             DHTAsyncContentAccessOutboundPort outboundPort = new DHTAsyncContentAccessOutboundPort(outboundPortURI, c);
             outboundPort.publishPort();
             DHTAsyncContentAccessConnector connector = new DHTAsyncContentAccessConnector();
-            outboundPort.doConnection(inboundPortURI, connector);
+            c.doPortConnection(outboundPortURI, inboundPortURI, connector);
+            //outboundPort.doConnection(inboundPortURI, connector);
             return (CI) outboundPort;
             
         }else if(this.getClientSideInterface().equals(MapReduceCI.class)) {
@@ -61,7 +62,7 @@ public class ConcreteAsyncBCMEndPoint<CI extends fr.sorbonne_u.components.interf
             DHTAsyncMapReduceOutboundPort outboundPort = new DHTAsyncMapReduceOutboundPort(outboundPortURI, c);
             outboundPort.publishPort();
             DHTAsyncMapReduceConnector connector = new DHTAsyncMapReduceConnector();
-            outboundPort.doConnection(inboundPortURI, connector);
+            c.doPortConnection(outboundPortURI, inboundPortURI, connector);
             return (CI) outboundPort;
         }else {
             throw new IllegalArgumentException("Interface client inconnue : " + this.getClientSideInterface());

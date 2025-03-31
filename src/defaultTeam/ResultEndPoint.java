@@ -1,6 +1,7 @@
 package defaultTeam;
 
 import java.io.Serializable;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceResultReceptionCI;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
@@ -19,21 +20,18 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ResultReceptionI;
 
 import java.util.concurrent.CompletableFuture;
 
-public class ResultEndPoint extends BCMEndPoint<ResultReceptionCI> {
+public class ResultEndPoint extends BCMEndPoint<ResultReceptionCI>{
 
     /**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	ComponentI owner;
 
-	public ResultEndPoint(ComponentI owner) {
-        super(ResultReceptionCI.class, ResultReceptionCI.class);
-        this.owner = owner;
+	public ResultEndPoint(String uri) {
+        super(ResultReceptionCI.class, ResultReceptionCI.class, uri);
     }
 
 	@Override
-	//TODO : inboundPortUri ? weird
 	protected AbstractInboundPort makeInboundPort(AbstractComponent c, String inboundPortURI) throws Exception {
 		ResultReceptionInboundPort inboundPort = new ResultReceptionInboundPort(serverSideOfferedInterface, c, inboundPortURI);
 		inboundPort.publishPort();
@@ -42,7 +40,7 @@ public class ResultEndPoint extends BCMEndPoint<ResultReceptionCI> {
 
 	@Override
 	protected ResultReceptionCI makeOutboundPort(AbstractComponent c, String inboundPortURI) throws Exception {
-		ResultReceptionOutboundPort outboundPort = new ResultReceptionOutboundPort(clientSideInterface, owner);
+		ResultReceptionOutboundPort outboundPort = new ResultReceptionOutboundPort(clientSideInterface, c);
 		outboundPort.publishPort();
 		ResultReceptionConnector connector = new ResultReceptionConnector();
 		outboundPort.doConnection(inboundPortURI, connector);

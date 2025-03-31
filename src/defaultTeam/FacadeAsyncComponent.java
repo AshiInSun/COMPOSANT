@@ -1,5 +1,6 @@
 package defaultTeam;
 import java.io.Serializable;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceResultReceptionCI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -7,6 +8,7 @@ import java.util.concurrent.Future;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.OfferedInterfaces;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
+import fr.sorbonne_u.components.endpoints.EndPoint;
 import fr.sorbonne_u.components.endpoints.EndPointI;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
@@ -31,21 +33,32 @@ import fr.sorbonne_u.cps.mapreduce.utils.URIGenerator;
 		DHTServicesCI.class, ContentAccessSyncCI.class, MapReduceSyncCI.class,
 		MapReduceCI.class, ContentAccessCI.class})
 public class FacadeAsyncComponent extends AbstractComponent 
-	implements ResultReceptionCI{
+	implements ResultReceptionCI, MapReduceResultReceptionCI{
 
 	private BCMAsyncContentNodeCompositeEndPoint server_edp;
 	private ConcreteBCMEndPoint<DHTServicesCI> client_edp;
 	protected final ResultEndPoint caller;
+	protected final MapReduceResultEndPoint mapreduce_caller;
 	protected final ConcurrentHashMap<String, CompletableFuture<ContentDataI>> pendingResults = new ConcurrentHashMap<>();
+	protected final ConcurrentHashMap<String, CompletableFuture<?>> pendingResultsMapReduce = new ConcurrentHashMap<>();
 
     protected FacadeAsyncComponent(
     		String uri, ConcreteBCMEndPoint<DHTServicesCI> client_edp , 
     		BCMAsyncContentNodeCompositeEndPoint server_edp) throws Exception {
 
 		super(1, 0);
-		this.caller = new ResultEndPoint(this);
-
+		//ENDPOINTS CALLERS
+		String callerURI = URIGenerator.generateURI();
+		String mapReduceCallerURI = URIGenerator.generateURI();
+ 		//Create new executor service....
+		this.caller = new ResultEndPoint(callerURI);
+		this.caller.initialiseServerSide(this);
+		this.mapreduce_caller = new MapReduceResultEndPoint(mapReduceCallerURI);
+		this.mapreduce_caller.initialiseServerSide(this);
+		
+		//OTHERS ENDPOINTS
         this.client_edp = client_edp;
+        client_edp.initialiseServerSide(this);
         this.server_edp = server_edp;
         
         this.traceMessage("FacadeAsyncComponent initialisé" );
@@ -65,6 +78,8 @@ public class FacadeAsyncComponent extends AbstractComponent
     @Override
     public void finalise() throws Exception {
     	server_edp.cleanUpClientSide();
+    	assert caller.clientSideClean();
+    	caller.cleanUpServerSide();
         this.traceMessage("FacadeAsyncComponent se termine...");
         super.finalise();
     }
@@ -79,13 +94,13 @@ public class FacadeAsyncComponent extends AbstractComponent
 		String computationURI = URIGenerator.generateURI();
 		CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
 		pendingResults.put(computationURI, cfuture);
-		server_edp.getContentAccessEndpoint().getClientSideReference().get(computationURI, key, caller);
+		server_edp.getContentAccessEndpoint().getClientSideReference().get(computationURI, key, caller.copyWithSharable());
+		
 		ContentDataI res = cfuture.get();
 		server_edp.getContentAccessEndpoint().getClientSideReference().clearComputation(computationURI);
 		return res;
 	}
 	
-	// FIXME
 	public <CI extends ResultReceptionCI>ContentDataI put(ContentKeyI key, ContentDataI value) throws Exception {
 		String computationURI = URIGenerator.generateURI();
 		CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
@@ -96,33 +111,37 @@ public class FacadeAsyncComponent extends AbstractComponent
 		return res;
 	}
 	
-	// FIXME
 	public ContentDataI remove(ContentKeyI key) throws Exception {
 		String computationURI = URIGenerator.generateURI();
 		CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
 		pendingResults.put(computationURI, cfuture);
-		server_edp.getContentAccessEndpoint().getClientSideReference().removeSync(computationURI, key);
+		server_edp.getContentAccessEndpoint().getClientSideReference().remove(computationURI, key, caller);
 		ContentDataI res = cfuture.get();
 		server_edp.getContentAccessEndpoint().getClientSideReference().clearComputation(computationURI);
 		return res;
 	}
 	
-	// FIXME
-	public <R extends Serializable, A extends Serializable> A mapReduce(
+	public <R extends Serializable, A extends Serializable, CI extends MapReduceResultReceptionCI> A mapReduce(
 			SelectorI selector, 
 			ProcessorI<R> processor,
 			ReductorI<A, R> reductor, 
 			CombinatorI<A> combinator, 
 			A initialAcc) throws Exception {
-			
-		if (selector == null || processor == null || reductor == null || combinator == null || initialAcc == null) 
+		System.out.println("FACADE1");
+		if (selector == null || processor == null || reductor == null || combinator == null || initialAcc == null ) 
 			throw new IllegalArgumentException("Parametre(s) de mapReduce null "); 
 		
 		String computationURI = URIGenerator.generateURI("MAP_REDUCE");
-		server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
-		A res = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, initialAcc);
+		CompletableFuture<A> cfuture = new CompletableFuture<>();
+		pendingResultsMapReduce.put(computationURI, cfuture);
+		server_edp.getMapReduceEndpoint().getClientSideReference().map(computationURI, selector, processor);
+		A identityAcc = initialAcc;
+		server_edp.getMapReduceEndpoint().getClientSideReference().reduce(
+				computationURI, reductor, combinator, initialAcc, identityAcc,mapreduce_caller.copyWithSharable()
+				);
+		A res = cfuture.get();
 		server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);		
-		return res;
+		return (A) res;
 	}
 
 	@Override
@@ -134,4 +153,14 @@ public class FacadeAsyncComponent extends AbstractComponent
             throw new Exception("No pending request found for computation URI: " + computationURI);
         }
 	}
+	@Override
+	public void acceptResult(String computationURI, String emitterId, Serializable acc) throws Exception {
+		CompletableFuture<Serializable> future = (CompletableFuture<Serializable>) pendingResultsMapReduce.remove(computationURI);
+        if (future != null) {
+            future.complete((Serializable) acc);
+        } else {
+            throw new Exception("No pending request found for computation URI: " + computationURI);
+        }
+	}
+	
 }

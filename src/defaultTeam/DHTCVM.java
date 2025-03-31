@@ -30,6 +30,9 @@ public class DHTCVM extends AbstractCVM {
         
         endPointsNode[0] = new BCMAsyncContentNodeCompositeEndPoint();
         endPointsNode[1] = new BCMAsyncContentNodeCompositeEndPoint();
+        String[] urinode = new String[NB_NODES];
+
+
         
         for(int i=0; i<NB_NODES; i++) {
         	String uri =  AbstractComponent.createComponent(
@@ -42,6 +45,7 @@ public class DHTCVM extends AbstractCVM {
 						endPointsNode [i].copyWithSharable(),
 						endPointsNode [(i+1)%NB_NODES].copyWithSharable()
 					});
+        	urinode[i] = uri;
         }
         
         //Composant Facade
@@ -61,6 +65,9 @@ public class DHTCVM extends AbstractCVM {
 			});
 	
 	this.toggleTracing(uri4);
+	for(int i=0; i<NB_NODES; i++) {
+		this.toggleTracing(urinode[i]);
+	}
     super.deploy();
     }
 

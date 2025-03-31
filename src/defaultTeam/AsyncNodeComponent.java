@@ -1,7 +1,9 @@
 package defaultTeam;
 import fr.sorbonne_u.components.AbstractComponent;
+
 import fr.sorbonne_u.components.annotations.OfferedInterfaces;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
+import fr.sorbonne_u.components.endpoints.EndPoint;
 import fr.sorbonne_u.components.endpoints.EndPointI;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
@@ -119,17 +121,21 @@ public class AsyncNodeComponent extends AbstractComponent {
 		
 			if ( interval.in(h) ) {
 				ContentDataI result = table.get(key);
+				caller.initialiseClientSide(this);
 		        caller.getClientSideReference().acceptResult(computationURI, result);
+		        caller.cleanUpClientSide();
 
 			}
 			else {
 				if (visited.containsKey(computationURI)) {
+					caller.initialiseClientSide(this);
 					caller.getClientSideReference().acceptResult(computationURI, null);
+					caller.cleanUpClientSide();
 					return;
 				}
 				
 				visited.put(computationURI, true);
-				(server_edp.getContentAccessEndpoint()).getClientSideReference().get(computationURI, key, caller);
+				(server_edp.getContentAccessEndpoint()).getClientSideReference().get(computationURI, key, caller.copyWithSharable());
 			}
     }
     
@@ -140,16 +146,20 @@ public class AsyncNodeComponent extends AbstractComponent {
 		
 		if ( interval.in(h) ) {
 			ContentDataI result =  table.put(key, value);
+			caller.initialiseClientSide(this);
 	        caller.getClientSideReference().acceptResult(computationURI, result);
+	        caller.cleanUpClientSide();
 		}
 		else {
 			if (visited.containsKey(computationURI)){
+				caller.initialiseClientSide(this);
 				caller.getClientSideReference().acceptResult(computationURI, null);
+				caller.cleanUpClientSide();
 				return;
 			}
 			
 			visited.put(computationURI, true);
-			(server_edp.getContentAccessEndpoint().getClientSideReference()).put(computationURI, key, value, caller);
+			(server_edp.getContentAccessEndpoint().getClientSideReference()).put(computationURI, key, value, caller.copyWithSharable());
 		}
 	}
     public <CI extends ResultReceptionCI> void remove(String computationURI, ContentKeyI key, EndPointI<CI> caller) throws Exception {
@@ -161,7 +171,9 @@ public class AsyncNodeComponent extends AbstractComponent {
 		}
 		else {
 			if (visited.containsKey(computationURI)){
+				caller.initialiseClientSide(this);
 				caller.getClientSideReference().acceptResult(computationURI, null);
+				caller.cleanUpClientSide();
 				return;
 			}
 			
@@ -172,21 +184,17 @@ public class AsyncNodeComponent extends AbstractComponent {
     
     @SuppressWarnings("unchecked")
 	public <R extends Serializable> void map(String computationURI, SelectorI selector, ProcessorI<R> processor) throws Exception {
+    	System.out.println("Map");
 		if (computationURI == null || computationURI.isEmpty() || selector == null || processor == null) 
 	        throw new IllegalArgumentException("Parametre(s) de mapSync null ");    		
 		
-		synchronized (visitedMap) {
-			if (visitedMap.containsKey(computationURI)) return;
-			visitedMap.put(computationURI, true);
-		}
+		if (visitedMap.containsKey(computationURI)) return;
+		visitedMap.put(computationURI, true);
 		
         Stream<ContentDataI> mapResults = (Stream<ContentDataI>) table.values().stream()
         		.filter(selector)
         		.map(processor);
-        
-        synchronized (streamMap) {
-        	streamMap.put(computationURI, mapResults);
-        }
+        streamMap.put(computationURI, mapResults);
         
         server_edp.getMapReduceEndpoint().getClientSideReference().map(computationURI, selector, processor);
 	}
@@ -195,30 +203,29 @@ public class AsyncNodeComponent extends AbstractComponent {
 	public <CI extends MapReduceResultReceptionCI, A extends Serializable, R> void reduce(
 			String computationURI, ReductorI<A, R> reductor, 
 			CombinatorI<A> combinator, A currentAcc, EndPointI<CI> caller) throws Exception {
+		System.out.println("Reduce");
+
 		
 		if (computationURI == null || computationURI.isEmpty() || reductor == null || combinator == null) {
 	        throw new IllegalArgumentException("Parametre(s) de reduceSync null ");    
 		}
 		
-		synchronized (visitedReduce) {
-			if (visitedReduce.containsKey(computationURI)) {
-				caller.getClientSideReference().acceptResult(computationURI, getURI(), currentAcc);		
-			}
-			visitedReduce.put(computationURI, true);
+		if (visitedReduce.containsKey(computationURI)) {
+			caller.initialiseClientSide(this);
+			caller.getClientSideReference().acceptResult(computationURI, getURI(), currentAcc);		
+			caller.cleanUpClientSide();
 		}
+		visitedReduce.put(computationURI, true);
 		
 		ReductorI<A, ContentDataI> reduct = (ReductorI<A, ContentDataI>) reductor;
 		Stream<ContentDataI> mapResults; 
 		
-		synchronized (streamMap) {
-			mapResults = streamMap.get(computationURI);
-		}
+		mapResults = streamMap.get(computationURI);
 		
 		if (mapResults == null)
 			throw new IllegalStateException("Pas de resultats trouvé pour computationUri: " + computationURI);
 		
 		A reduceResult = mapResults.reduce(currentAcc, reduct, combinator);
-		
 		server_edp.getMapReduceEndpoint().getClientSideReference().reduce(computationURI, reductor, combinator, currentAcc, reduceResult, caller);
 		
 		caller.getClientSideReference().acceptResult(computationURI, getURI(), reduceResult);
@@ -286,11 +293,9 @@ public class AsyncNodeComponent extends AbstractComponent {
 			throw new IllegalArgumentException("ComputationURI null");
 		
 		if (visitedMap.containsKey(computationURI) && visitedReduce.containsKey(computationURI)){
-			synchronized (streamMap) {
 				streamMap.remove(computationURI);
 				visitedMap.remove(computationURI);
 				visitedReduce.remove(computationURI);
-			}
 			server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);
 		}
 	}
@@ -309,9 +314,7 @@ public class AsyncNodeComponent extends AbstractComponent {
         		.filter(selector)
         		.map(processor);
         
-        synchronized (streamMap) {
-        	streamMap.put(computationURI, mapResults);
-        }
+        streamMap.put(computationURI, mapResults);
         
         server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
 	}

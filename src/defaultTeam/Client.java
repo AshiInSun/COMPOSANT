@@ -77,6 +77,11 @@ public class Client extends AbstractComponent {
             this.traceMessage("Donnée pour k1: " + result.getValue(NOM) + ", " + result.getValue(AGE) + "\n");
         else
             this.traceMessage("Donnée pour k1 non trouvée.\n");
+        ContentDataI resultA = dht_edp.getClientSideReference().get(k2);
+        if (result != null) 
+            this.traceMessage("Donnée pour k2: " + resultA.getValue(NOM) + ", " + resultA.getValue(AGE) + "\n");
+        else
+            this.traceMessage("Donnée pour k2 non trouvée.\n");
 
         // Moyenne des âges avec mapReduce asynchrone
         this.traceMessage("\nUtilisation de mapReduce (asynchrone) pour calculer l'âge moyen\n");
@@ -86,7 +91,7 @@ public class Client extends AbstractComponent {
         ReductorI<int[], Integer> reductor = (acc, age) -> new int[]{acc[0] + age, acc[1] + 1};
         CombinatorI<int[]> combinator = (acc1, acc2) -> new int[]{acc1[0] + acc2[0], acc1[1] + acc2[1]};
         int[] initialAcc = new int[]{0, 0};
-
+        int[] identityAcc = new int[]{0, 0};
         int[] res = dht_edp.getClientSideReference().mapReduce(selector, processor, reductor, combinator, initialAcc);
         double ageMoyen = (res[1] == 0) ? 0 : (double) res[0] / res[1];
         this.traceMessage("L'âge moyen est: " + ageMoyen + "\n");

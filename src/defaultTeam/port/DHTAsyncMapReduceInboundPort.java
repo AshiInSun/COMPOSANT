@@ -23,20 +23,18 @@ public class DHTAsyncMapReduceInboundPort extends DHTMapReduceInboundPort implem
 	public <R extends Serializable, I extends MapReduceResultReceptionCI> void map(String computationURI,
 			SelectorI selector, ProcessorI<R> processor) throws Exception {
         try {
-            ((AsyncNodeComponent) owner).mapSync(computationURI, selector, processor);
+            ((AsyncNodeComponent) owner).map(computationURI, selector, processor);
         } catch (Exception e) {
             e.printStackTrace();
         }
 	}
 
 	@Override
-	public <A extends Serializable, R, I extends MapReduceResultReceptionCI> void reduce(String computationURI,
-			ReductorI<A, R> reductor, CombinatorI<A> combinator, A identityAcc, A currentAcc, EndPointI<I> callerNode)
+	public <A extends Serializable, R, CI extends MapReduceResultReceptionCI> void reduce(String computationURI,
+			ReductorI<A, R> reductor, CombinatorI<A> combinator, A identityAcc, A currentAcc, EndPointI<CI> callerNode)
 			throws Exception {
         try {
-            A result = ((AsyncNodeComponent) owner).reduceSync(computationURI, reductor, combinator, currentAcc);
-            String emitterId = ((AsyncNodeComponent) owner).getURI();
-            callerNode.getClientSideReference().acceptResult(computationURI, emitterId, result);
+            ((AsyncNodeComponent) owner).reduce(computationURI, reductor, combinator, currentAcc, callerNode);
         } catch (Exception e) {
             e.printStackTrace();
         }
