@@ -33,10 +33,11 @@ import java.util.stream.Stream;
 import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
 
 @OfferedInterfaces(offered = {ContentAccessSyncCI.class, MapReduceSyncCI.class, 
-        ContentAccessCI.class, MapReduceCI.class, 
-        DHTServicesCI.class})
+        ContentAccessCI.class, MapReduceCI.class, DHTServicesCI.class, 
+        ResultReceptionCI.class, MapReduceResultReceptionCI.class})
 @RequiredInterfaces(required = {ContentAccessSyncCI.class, MapReduceSyncCI.class, 
-        ContentAccessCI.class, MapReduceCI.class})
+        ContentAccessCI.class, MapReduceCI.class, 
+        ResultReceptionCI.class, MapReduceResultReceptionCI.class })
 public class NodeAsyncComponent extends AbstractComponent {
 	
 	private IntInterval interval;
