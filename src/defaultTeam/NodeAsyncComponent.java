@@ -226,7 +226,6 @@ public class NodeAsyncComponent extends AbstractComponent {
 		}
 		visitedReduce.put(computationURI, true);
 		
-		ReductorI<A, ContentDataI> reduct = (ReductorI<A, ContentDataI>) reductor;
 		Stream<ContentDataI> mapResults; 
 		
 		mapResults = streamMap.get(computationURI);
@@ -234,7 +233,7 @@ public class NodeAsyncComponent extends AbstractComponent {
 		if (mapResults == null)
 			throw new IllegalStateException("Pas de resultats trouvé pour computationUri: " + computationURI);
 		
-		A reduceResult = mapResults.reduce(currentAcc, reduct, combinator);
+		A reduceResult = ((Stream<R>) mapResults).reduce(currentAcc, reductor, combinator);
 		this.traceMessage("- Passe au noeud suivant\n");
 		server_edp.getMapReduceEndpoint().getClientSideReference().reduce(computationURI, reductor, combinator, currentAcc, reduceResult, caller);
 	}
