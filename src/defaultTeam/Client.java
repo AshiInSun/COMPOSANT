@@ -15,15 +15,16 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 import java.util.concurrent.CountDownLatch;
 
 import defaultTeam.endpoints.ConcreteBCMEndPoint;
+import defaultTeam.endpoints.DHTServicesEndPoint;
 
 @RequiredInterfaces(required = {DHTServicesCI.class})
 public class Client extends AbstractComponent {
     private static final String NOM = "NOM";
     private static final String AGE = "AGE";
 
-    private ConcreteBCMEndPoint<DHTServicesCI> dht_edp;
+    private DHTServicesEndPoint dht_edp;
 
-    protected Client(String uri, ConcreteBCMEndPoint<DHTServicesCI> dht_edp) throws Exception {
+    protected Client(String uri, DHTServicesEndPoint dht_edp) throws Exception {
         super(1, 0);
         this.dht_edp = dht_edp;
     }

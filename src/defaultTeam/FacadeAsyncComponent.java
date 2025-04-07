@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
 import defaultTeam.endpoints.ConcreteBCMEndPoint;
+import defaultTeam.endpoints.DHTServicesEndPoint;
 import defaultTeam.endpoints.MapReduceResultEndPoint;
 import defaultTeam.endpoints.ResultEndPoint;
 import fr.sorbonne_u.components.AbstractComponent;
@@ -36,7 +37,7 @@ import fr.sorbonne_u.cps.mapreduce.utils.URIGenerator;
 public class FacadeAsyncComponent extends AbstractComponent {
 
 	private BCMAsyncContentNodeCompositeEndPoint server_edp;
-	private ConcreteBCMEndPoint<DHTServicesCI> client_edp;
+	private DHTServicesEndPoint client_edp;
 	protected final ResultEndPoint caller;
 	protected final MapReduceResultEndPoint mapreduce_caller;
 	protected final ConcurrentHashMap<String, CompletableFuture<ContentDataI>> pendingResults 
@@ -45,7 +46,7 @@ public class FacadeAsyncComponent extends AbstractComponent {
 		= new ConcurrentHashMap<>();
 
     protected FacadeAsyncComponent(
-    		String uri, ConcreteBCMEndPoint<DHTServicesCI> client_edp , 
+    		String uri, DHTServicesEndPoint client_edp , 
     		BCMAsyncContentNodeCompositeEndPoint server_edp) throws Exception {
 
 		super(1, 0);

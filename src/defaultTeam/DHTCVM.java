@@ -1,12 +1,10 @@
 package defaultTeam;
 
 import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
-import defaultTeam.endpoints.ConcreteBCMEndPoint;
 import defaultTeam.endpoints.DHTServicesEndPoint;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.AbstractPort;
 import fr.sorbonne_u.components.cvm.AbstractCVM;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 import fr.sorbonne_u.exceptions.VerboseException;
 
@@ -27,12 +25,8 @@ public class DHTCVM extends AbstractCVM {
         BCMAsyncContentNodeCompositeEndPoint dht_node =
         		new BCMAsyncContentNodeCompositeEndPoint();
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-		ConcreteBCMEndPoint<DHTServicesCI> dht_client =
-        		 new ConcreteBCMEndPoint(DHTServicesCI.class, DHTServicesCI.class, uri_client);
-        
-        /*DHTServicesEndPoint dht_client =
-       		 new DHTServicesEndPoint(uri_client);*/
+        DHTServicesEndPoint dht_client =
+       		 new DHTServicesEndPoint(uri_client);
         
         
         BCMAsyncContentNodeCompositeEndPoint[] endPointsNode = 
