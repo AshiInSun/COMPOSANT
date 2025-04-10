@@ -28,6 +28,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessCI;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
@@ -42,10 +44,14 @@ public class NodeAsyncComponent extends AbstractComponent {
 	
 	private IntInterval interval;
 	private String uri;
+	public static final String CONTENT_ACCESS_HANDLER_URI = "caah";
+	public static final String MAP_REDUCE_HANDLER_URI = "mrah";
 	
 	
     private final Map<ContentKeyI, ContentDataI> table;
     HashMap<String,Stream<ContentDataI>> streamMap;
+    protected final ConcurrentHashMap<String, CompletableFuture<Boolean>> isMapDone
+    	= new ConcurrentHashMap<>();
     
     private Map<String, Boolean> visited;
     private Map<String, Boolean> visitedMap;	// On peut optimiser ces deux hashmap visited pour map reduce
@@ -76,6 +82,9 @@ public class NodeAsyncComponent extends AbstractComponent {
         }else {
         	this.dht_edp = null;
         }
+        
+        this.createNewExecutorService(CONTENT_ACCESS_HANDLER_URI, 4,false);
+        this.createNewExecutorService(MAP_REDUCE_HANDLER_URI, 4,false);
         
         this.toggleLogging();
         
@@ -195,6 +204,9 @@ public class NodeAsyncComponent extends AbstractComponent {
 		
 		this.traceMessage("Execute map...\n");
 		
+		CompletableFuture<Boolean> cfuture = new CompletableFuture<>();
+		isMapDone.putIfAbsent(computationURI, cfuture);
+		
 		if (visitedMap.containsKey(computationURI)) return;
 		visitedMap.put(computationURI, true);
 		
@@ -203,6 +215,12 @@ public class NodeAsyncComponent extends AbstractComponent {
         		.map(processor);
         streamMap.put(computationURI, mapResults);
         
+        cfuture = isMapDone.get(computationURI);
+        if(cfuture!=null) {
+        	cfuture.complete(true);
+        }else {
+        	throw new Exception("No pending request for isMapDone" + computationURI);
+        }
         this.traceMessage("- Passe au noeud suivant\n");
         server_edp.getMapReduceEndpoint().getClientSideReference().map(computationURI, selector, processor);
 	}
@@ -214,7 +232,11 @@ public class NodeAsyncComponent extends AbstractComponent {
 
 		assert computationURI != null && !computationURI.isEmpty() && reductor != null && combinator != null && caller != null :
     		"Parametre(s) de reduce non valides";
-				
+		this.traceMessage("Reduce waiting for map...\n");	
+		CompletableFuture<Boolean> cfuture = new CompletableFuture<>();
+		isMapDone.putIfAbsent(computationURI, cfuture);
+		cfuture = isMapDone.get(computationURI);
+		cfuture.get();
 		this.traceMessage("Execute reduce...\n");
 
 		if (visitedReduce.containsKey(computationURI)) {
