@@ -16,6 +16,7 @@ import java.io.Serializable;
 
 public class DHTAsyncMapReduceInboundPort extends DHTMapReduceInboundPort implements MapReduceCI {
     private static final long serialVersionUID = 1L;
+    public static final String MAP_REDUCE_HANDLER_URI = "mrah";
 
     public DHTAsyncMapReduceInboundPort(String uri, ComponentI owner) throws Exception {
         super(uri, owner);
@@ -24,7 +25,7 @@ public class DHTAsyncMapReduceInboundPort extends DHTMapReduceInboundPort implem
 	@Override
 	public <R extends Serializable, I extends MapReduceResultReceptionCI> void map(String computationURI,
 			SelectorI selector, ProcessorI<R> processor) throws Exception {
-		this.getOwner().runTask(o -> {
+		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
 	        try {
 	            ((NodeAsyncComponent) o).map(computationURI, selector, processor);
 	        } catch (Exception e) {
@@ -37,7 +38,7 @@ public class DHTAsyncMapReduceInboundPort extends DHTMapReduceInboundPort implem
 	public <A extends Serializable, R, CI extends MapReduceResultReceptionCI> void reduce(String computationURI,
 			ReductorI<A, R> reductor, CombinatorI<A> combinator, A identityAcc, A currentAcc, EndPointI<CI> callerNode)
 			throws Exception {
-		this.getOwner().runTask(o -> {
+		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
 	        try {
 	            ((NodeAsyncComponent) o).reduce(computationURI, reductor, combinator, currentAcc, callerNode);
 	        } catch (Exception e) {
@@ -47,7 +48,7 @@ public class DHTAsyncMapReduceInboundPort extends DHTMapReduceInboundPort implem
 	}
 	@Override
 	public void clearMapReduceComputation(String computationURI) throws Exception {
-		this.getOwner().runTask(o -> {
+		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
 	        try {
 	        	((NodeAsyncComponent) o).clearMapReduceComputation(computationURI);
 	        } catch (Exception e) {
