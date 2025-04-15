@@ -12,9 +12,9 @@ public class ContentKey implements ContentKeyI {
 
     @Override
     public int hashCode() {
-        int hashed =  key.hashCode() % 200;
-        return (hashed < 0) ? -1 * 200 : hashed;	// Pour eviter que le hash soit negatif
+        return Math.floorMod(key.hashCode(), 200);
     }
+
 
     @Override
     public boolean equals(Object obj) {
@@ -27,5 +27,4 @@ public class ContentKey implements ContentKeyI {
     public String getKey() {
     	return this.key;
     }
-
 }

@@ -26,7 +26,8 @@ public class DHTServiceOutboundPort extends AbstractOutboundPort implements DHTS
     @Override
     public ContentDataI get(ContentKeyI key) throws Exception {
     	if (this.connected()) {
-            return ((DHTServicesCI) this.getConnector()).get(key);
+    		ContentDataI res = ((DHTServicesCI) this.getConnector()).get(key);
+            return res;
         } else {
             throw new Exception("DHTOutboundPort : no connexion");
         }

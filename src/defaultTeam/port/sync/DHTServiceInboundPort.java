@@ -16,14 +16,16 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 
 public class DHTServiceInboundPort extends AbstractInboundPort implements DHTServicesCI {
     private static final long serialVersionUID = 1L;
-
+    public static final String CONTENT_ACCESS_HANDLER_URI = "caah";
+    public static final String MAP_REDUCE_HANDLER_URI = "mrah";
+    
     public DHTServiceInboundPort(String uri, ComponentI owner) throws Exception {
         super(uri, DHTServicesCI.class, (ComponentI) owner);
     }
 
 	@Override
 	public ContentDataI get(ContentKeyI key) throws Exception {
-		return this.getOwner().handleRequest(o -> {
+		return this.getOwner().handleRequest(CONTENT_ACCESS_HANDLER_URI, o -> {
 	        try {
 	            return ((FacadeAsyncComponent) o).get(key);
 	        } catch (Exception e) {
@@ -35,7 +37,7 @@ public class DHTServiceInboundPort extends AbstractInboundPort implements DHTSer
 
 	@Override
 	public ContentDataI put(ContentKeyI key, ContentDataI value) throws Exception {
-		return this.getOwner().handleRequest(o -> {
+		return this.getOwner().handleRequest(CONTENT_ACCESS_HANDLER_URI, o -> {
 	        try {
 	        	return ((FacadeAsyncComponent) this.owner).put(key, value);
 	        } catch (Exception e) {
@@ -47,7 +49,7 @@ public class DHTServiceInboundPort extends AbstractInboundPort implements DHTSer
 
 	@Override
 	public ContentDataI remove(ContentKeyI key) throws Exception {
-		return this.getOwner().handleRequest(o -> {
+		return this.getOwner().handleRequest(CONTENT_ACCESS_HANDLER_URI, o -> {
 	        try {
 	        	return ((FacadeAsyncComponent) this.owner).remove(key);
 	        } catch (Exception e) {
@@ -64,7 +66,7 @@ public class DHTServiceInboundPort extends AbstractInboundPort implements DHTSer
 		ReductorI<A, R> reductor, 
 		CombinatorI<A> combinator, 
 		A initialAcc) throws Exception {
-		return this.getOwner().handleRequest(o -> {
+		return this.getOwner().handleRequest(MAP_REDUCE_HANDLER_URI, o -> {
 	        try {
 	        	return ((FacadeAsyncComponent) this.owner).mapReduce(selector, processor, reductor, combinator, initialAcc);
 	        } catch (Exception e) {

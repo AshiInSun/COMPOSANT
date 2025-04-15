@@ -52,6 +52,7 @@ public class NodeAsyncComponent extends AbstractComponent {
     HashMap<String,Stream<ContentDataI>> streamMap;
     protected final ConcurrentHashMap<String, CompletableFuture<Boolean>> isMapDone
     	= new ConcurrentHashMap<>();
+    private final java.util.concurrent.Semaphore endpointLock = new java.util.concurrent.Semaphore(1);
     
     private Map<String, Boolean> visited;
     private Map<String, Boolean> visitedMap;	// On peut optimiser ces deux hashmap visited pour map reduce
@@ -87,6 +88,7 @@ public class NodeAsyncComponent extends AbstractComponent {
         this.createNewExecutorService(MAP_REDUCE_HANDLER_URI, 4,false);
         
         this.toggleLogging();
+        this.toggleTracing();
         
         client_edp.initialiseServerSide(this);
         if(debut==0) {
@@ -130,19 +132,31 @@ public class NodeAsyncComponent extends AbstractComponent {
     public <CI extends ResultReceptionCI> void get(
     		String computationURI, ContentKeyI key, EndPointI<CI> caller) throws Exception {
     		int h = key.hashCode();
+    		this.traceMessage(this.uri +" uri || comput : "+computationURI + " || apell a get()\n");
 		
 			if ( interval.in(h) ) {
+				endpointLock.acquire();
 				ContentDataI result = table.get(key);
-				caller.initialiseClientSide(this);
-		        caller.getClientSideReference().acceptResult(computationURI, result);
-		        caller.cleanUpClientSide();
-
+				try {
+					caller.initialiseClientSide(this);
+			        caller.getClientSideReference().acceptResult(computationURI, result);
+			        this.traceMessage(computationURI + " || result :" + result + "not supposed to be null\n");
+			        caller.cleanUpClientSide();
+		        } finally {
+		            endpointLock.release();  
+		        }
 			}
 			else {
 				if (visited.containsKey(computationURI)) {
-					caller.initialiseClientSide(this);
-					caller.getClientSideReference().acceptResult(computationURI, null);
-					caller.cleanUpClientSide();
+					endpointLock.acquire();
+					try {
+						caller.initialiseClientSide(this);
+				        caller.getClientSideReference().acceptResult(computationURI, null);
+				        this.traceMessage(computationURI + " || all seen, not in the table\n");
+				        caller.cleanUpClientSide();
+			        } finally {
+			            endpointLock.release();  
+			        }
 					return;
 				}
 				
@@ -157,18 +171,28 @@ public class NodeAsyncComponent extends AbstractComponent {
 		int h = key.hashCode();
 		
 		if ( interval.in(h) ) {
+			endpointLock.acquire();
 			ContentDataI result =  table.put(key, value);
-			caller.initialiseClientSide(this);
-			
-	        caller.getClientSideReference().acceptResult(computationURI, result);
-	        caller.cleanUpClientSide();;
+			this.traceMessage(computationURI + "|| put - key, value : " + key + ", " + value + "\n");
+			try {
+				caller.initialiseClientSide(this);
+		        caller.getClientSideReference().acceptResult(computationURI, result);
+		        caller.cleanUpClientSide();
+	        } finally {
+	            endpointLock.release();  
+	        }
 	        return;
 		}
 		else {
 			if (visited.containsKey(computationURI)){
-				caller.initialiseClientSide(this);
-				caller.getClientSideReference().acceptResult(computationURI, null);
-				caller.cleanUpClientSide();
+				endpointLock.acquire();
+				try {
+					caller.initialiseClientSide(this);
+			        caller.getClientSideReference().acceptResult(computationURI, null);
+			        caller.cleanUpClientSide();
+		        } finally {
+		            endpointLock.release();  
+		        }
 				return;
 			}
 			
@@ -185,9 +209,14 @@ public class NodeAsyncComponent extends AbstractComponent {
 		}
 		else {
 			if (visited.containsKey(computationURI)){
+				endpointLock.acquire();
+				try {
 				caller.initialiseClientSide(this);
 				caller.getClientSideReference().acceptResult(computationURI, null);
-				caller.cleanUpClientSide();
+				caller.cleanUpClientSide();				
+				} finally {
+					endpointLock.release();
+				}
 				return;
 			}
 			

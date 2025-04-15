@@ -44,6 +44,9 @@ public class FacadeAsyncComponent extends AbstractComponent {
 		= new ConcurrentHashMap<>();
 	protected final ConcurrentHashMap<String, CompletableFuture<?>> pendingResultsMapReduce 
 		= new ConcurrentHashMap<>();
+	public static final String CONTENT_ACCESS_HANDLER_URI = "caah";
+	public static final String MAP_REDUCE_HANDLER_URI = "mrah";
+	public static final String ACCEPT_RESULT_HANDLER_URI = "arah";
 
     protected FacadeAsyncComponent(
     		String uri, DHTServicesEndPoint client_edp , 
@@ -64,6 +67,10 @@ public class FacadeAsyncComponent extends AbstractComponent {
         client_edp.initialiseServerSide(this);
         this.server_edp = server_edp;
         
+        //PARRALELISM
+        this.createNewExecutorService(CONTENT_ACCESS_HANDLER_URI, 4,false);
+        this.createNewExecutorService(MAP_REDUCE_HANDLER_URI, 4,false);
+        this.createNewExecutorService(ACCEPT_RESULT_HANDLER_URI, 4,false);
         this.traceMessage("FacadeAsyncComponent initialisé" );
     }
 
@@ -94,6 +101,7 @@ public class FacadeAsyncComponent extends AbstractComponent {
     }
 
 	public <CI extends ResultReceptionCI>ContentDataI get(ContentKeyI key) throws Exception {
+		this.traceMessage("Try to get\n");
 		String computationURI = URIGenerator.generateURI();
 		CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
 		pendingResults.put(computationURI, cfuture);
@@ -101,6 +109,7 @@ public class FacadeAsyncComponent extends AbstractComponent {
 		
 		ContentDataI res = cfuture.get();
 		server_edp.getContentAccessEndpoint().getClientSideReference().clearComputation(computationURI);
+		this.traceMessage("I got the future :"+res+"\n");
 		return res;
 	}
 	

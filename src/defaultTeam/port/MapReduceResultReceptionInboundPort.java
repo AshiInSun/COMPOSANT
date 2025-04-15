@@ -16,6 +16,7 @@ public class MapReduceResultReceptionInboundPort  extends AbstractInboundPort im
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	private static final String ACCEPT_RESULT_HANDLER_URI= "arah";
 
 	public MapReduceResultReceptionInboundPort(Class<? extends OfferedCI> implementedInterface, ComponentI owner, String uri)
 			throws Exception {
@@ -24,6 +25,12 @@ public class MapReduceResultReceptionInboundPort  extends AbstractInboundPort im
 
 	@Override
 	public void acceptResult(String computationURI, String emitterId, Serializable acc) throws Exception {
-		((FacadeAsyncComponent) this.owner).acceptResult(computationURI, emitterId, acc);
+		this.getOwner().runTask(ACCEPT_RESULT_HANDLER_URI, o -> {
+		    try {
+		    	((FacadeAsyncComponent) this.owner).acceptResult(computationURI, emitterId, acc);
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		    }
+		});
 	}
 }
