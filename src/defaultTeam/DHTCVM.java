@@ -77,6 +77,20 @@ public class DHTCVM extends AbstractCVM {
 
             this.toggleTracing(uri_client_component);
         }
+        
+        //Client pour test de base
+        String uri_client = AbstractPort.generatePortURI(DHTServicesCI.class);
+
+        String uri_client_component = AbstractComponent.createComponent(
+                ClientCAtest.class.getCanonicalName(),
+                new Object[]{
+                        uri_client,
+                        dht_client.copyWithSharable()
+                });
+
+        this.toggleTracing(uri_client_component);
+        
+
 
         // Tracer les nœuds pour voir les opérations
         for (String uri : urinode) {

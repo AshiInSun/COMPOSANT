@@ -65,6 +65,7 @@ public class ClientInserteur extends AbstractComponent {
             assert actual.getValue("AGE").equals(expected.getValue("AGE"));
             }catch (AssertionError e) {
             	this.traceMessage("❌ AssertionError : " + e.getMessage() + "\n");
+            	System.out.println("❌ AssertionError : " + e.getMessage() + "\n");
             }
             this.traceMessage("[GET OK] " + key + "\n");
         }

@@ -204,8 +204,15 @@ public class NodeAsyncComponent extends AbstractComponent {
 		int h = key.hashCode();
 		
 		if ( interval.in(h) ) {
+			endpointLock.acquire();
 			ContentDataI result =  table.remove(key);
+			try {
+			caller.initialiseClientSide(this);
 	        caller.getClientSideReference().acceptResult(computationURI, result);
+	        caller.cleanUpClientSide();				
+			} finally {
+				endpointLock.release();
+			}
 		}
 		else {
 			if (visited.containsKey(computationURI)){
@@ -221,7 +228,7 @@ public class NodeAsyncComponent extends AbstractComponent {
 			}
 			
 			visited.put(computationURI, true);
-			(server_edp.getContentAccessEndpoint().getClientSideReference()).remove(computationURI, key, caller);
+			(server_edp.getContentAccessEndpoint().getClientSideReference()).remove(computationURI, key, caller.copyWithSharable());
 		}
 	}
     
