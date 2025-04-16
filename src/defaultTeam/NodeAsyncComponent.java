@@ -27,9 +27,11 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessCI;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
@@ -49,7 +51,8 @@ public class NodeAsyncComponent extends AbstractComponent {
 	
 	
     private final Map<ContentKeyI, ContentDataI> table;
-    HashMap<String,Stream<ContentDataI>> streamMap;
+    //HashMap<String,Stream<ContentDataI>> streamMap;
+    private final Map<String, List<Object>> mapResults;
     protected final ConcurrentHashMap<String, CompletableFuture<Boolean>> isMapDone
     	= new ConcurrentHashMap<>();
     private final java.util.concurrent.Semaphore endpointLock = new java.util.concurrent.Semaphore(1);
@@ -72,7 +75,7 @@ public class NodeAsyncComponent extends AbstractComponent {
         this.interval = new IntInterval(debut, fin);
         this.uri = uri;
         this.table = new HashMap<>();
-        this.streamMap = new HashMap<String, Stream<ContentDataI>>();
+        this.mapResults = new ConcurrentHashMap<>();
         this.visited = new HashMap<>();
         this.visitedMap = new HashMap<>();
         this.visitedReduce = new HashMap<>();
@@ -121,7 +124,7 @@ public class NodeAsyncComponent extends AbstractComponent {
     }
     
     public boolean existStream(String computationURI) {
-		return streamMap.containsKey(computationURI);
+		return mapResults.containsKey(computationURI);
 	}
     
     public String getURI() {
@@ -246,10 +249,15 @@ public class NodeAsyncComponent extends AbstractComponent {
 		if (visitedMap.containsKey(computationURI)) return;
 		visitedMap.put(computationURI, true);
 		
-        Stream<ContentDataI> mapResults = (Stream<ContentDataI>) table.values().stream()
+        /**Stream<ContentDataI> mapResults = (Stream<ContentDataI>) table.values().stream()
         		.filter(selector)
         		.map(processor);
-        streamMap.put(computationURI, mapResults);
+        streamMap.put(computationURI, mapResults);**/
+		List<Object> results = table.values().stream()
+                .filter(selector)
+                .map(data ->  processor.apply(data))
+                .collect(Collectors.toList());
+		mapResults.put(computationURI, results);
         
         cfuture = isMapDone.get(computationURI);
         if(cfuture!=null) {
@@ -276,24 +284,31 @@ public class NodeAsyncComponent extends AbstractComponent {
 		this.traceMessage("Execute reduce...\n");
 
 		if (visitedReduce.containsKey(computationURI)) {
+			endpointLock.acquire();
+			try {
 			caller.initialiseClientSide(this);
 			this.traceMessage("- Appel acceptResult\n");
 			caller.getClientSideReference().acceptResult(computationURI, getURI(), currentAcc);	
 			caller.cleanUpClientSide();
+			}finally {
+				endpointLock.release();
+			}
 			return;
 		}
 		visitedReduce.put(computationURI, true);
 		
-		Stream<ContentDataI> mapResults; 
-		
-		mapResults = streamMap.get(computationURI);
-		
+		List<Object> values = mapResults.get(computationURI);
+        if (values == null)
+            throw new IllegalStateException("Pas de resultats pour " + computationURI);
+
+        Stream<R> stream = values.stream().map(d -> (R) d);
+	
 		if (mapResults == null)
 			throw new IllegalStateException("Pas de resultats trouvé pour computationUri: " + computationURI);
 		
-		A reduceResult = ((Stream<R>) mapResults).reduce(currentAcc, reductor, combinator);
+		A reduced = stream.reduce(currentAcc, reductor, combinator);
 		this.traceMessage("- Passe au noeud suivant\n");
-		server_edp.getMapReduceEndpoint().getClientSideReference().reduce(computationURI, reductor, combinator, currentAcc, reduceResult, caller);
+		server_edp.getMapReduceEndpoint().getClientSideReference().reduce(computationURI, reductor, combinator, currentAcc, reduced, caller.copyWithSharable());
 	}
     
     
@@ -360,7 +375,7 @@ public class NodeAsyncComponent extends AbstractComponent {
     		"computationURI vide dans clearMapReduceComputation";
 		
 		if (visitedMap.containsKey(computationURI) && visitedReduce.containsKey(computationURI)){
-				streamMap.remove(computationURI);
+				mapResults.remove(computationURI);
 				visitedMap.remove(computationURI);
 				visitedReduce.remove(computationURI);
 			server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);
@@ -368,52 +383,32 @@ public class NodeAsyncComponent extends AbstractComponent {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public <R extends Serializable> void mapSync(String computationURI, SelectorI selector, ProcessorI<R> processor) throws Exception {
+    public <R extends Serializable> void mapSync(String computationURI, SelectorI selector, ProcessorI<R> processor) throws Exception {
+        if (visitedMap.putIfAbsent(computationURI, true) != null) return;
 
-		assert computationURI != null && !computationURI.isEmpty() && selector != null && processor != null :
-    		"Parametre(s) de mapSync non valides";
-		
-		synchronized (visitedMap) {
-			if (visitedMap.containsKey(computationURI)) return;
-			visitedMap.put(computationURI, true);
-		}
-		
-        Stream<ContentDataI> mapResults = (Stream<ContentDataI>) table.values().stream()
-        		.filter(selector)
-        		.map(processor);
-        
-        streamMap.put(computationURI, mapResults);
-        
+        List<Object> results = table.values().stream()
+                .filter(selector)
+                .map(data ->processor.apply(data))
+                .collect(Collectors.toList());
+
+        mapResults.put(computationURI, results);
+
         server_edp.getMapReduceEndpoint().getClientSideReference().mapSync(computationURI, selector, processor);
-	}
+    }
 
-	@SuppressWarnings("unchecked")
-	public <A extends Serializable, R> A reduceSync(String computationURI, ReductorI<A, R> reductor, CombinatorI<A> combinator, A currentAcc)
-			throws Exception {   
-	        
-        assert computationURI != null && !computationURI.isEmpty() && reductor != null && combinator != null :
-    		"Parametre(s) de reduceSync non valides";
+    @SuppressWarnings("unchecked")
+    public <A extends Serializable, R> A reduceSync(String computationURI, ReductorI<A, R> reductor,
+                                                    CombinatorI<A> combinator, A currentAcc) throws Exception {
+        if (visitedReduce.putIfAbsent(computationURI, true) != null) return currentAcc;
 
-		
-		synchronized (visitedReduce) {
-			if (visitedReduce.containsKey(computationURI)) return currentAcc;		
-			visitedReduce.put(computationURI, true);
-		}
-		
-		ReductorI<A, ContentDataI> reduct = (ReductorI<A, ContentDataI>) reductor;
-		Stream<ContentDataI> mapResults; 
-		
-		synchronized (streamMap) {
-			mapResults = streamMap.get(computationURI);
-		}
-		
-		if (mapResults == null)
-			throw new IllegalStateException("Pas de resultats trouvé pour computationUri: " + computationURI);
-		
-		A reduceResult = mapResults.reduce(currentAcc, reduct, combinator);
-		
-		reduceResult = server_edp.getMapReduceEndpoint().getClientSideReference().reduceSync(computationURI, reductor, combinator, reduceResult);
+        List<Object> values = mapResults.get(computationURI);
+        if (values == null)
+            throw new IllegalStateException("Pas de resultats pour " + computationURI);
 
-		return reduceResult;
-	}
+        Stream<R> stream = values.stream().map(d -> (R) d);
+        A reduced = stream.reduce(currentAcc, reductor, combinator);
+
+        return server_edp.getMapReduceEndpoint().getClientSideReference()
+                .reduceSync(computationURI, reductor, combinator, reduced);
+    }
 }

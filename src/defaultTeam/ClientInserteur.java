@@ -18,6 +18,7 @@ public class ClientInserteur extends AbstractComponent {
 
     private DHTServicesEndPoint dht_edp;
     private final String clientId;
+    private final int NB_VALUES = 1000;
 
     protected ClientInserteur(String uri, DHTServicesEndPoint dht_edp) throws Exception {
         super(1, 0);
@@ -43,7 +44,7 @@ public class ClientInserteur extends AbstractComponent {
         List<ContentKeyI> keys = new ArrayList<>();
         List<ContentDataI> personnes = new ArrayList<>();
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < NB_VALUES; i++) {
             ContentKeyI key = new ContentKey("c" + clientId + "-k" + i);
             ContentDataI person = new Personne("Client" + clientId + "-Person" + i, 20 + i);
             dht_edp.getClientSideReference().put(key, person);

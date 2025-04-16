@@ -12,7 +12,13 @@ public class DHTCVM extends AbstractCVM {
 
     private static final int NB_NODES = 2;
     private static final int SIZE_NODES = 100;
-    private static final int NB_CLIENTS = 3;
+    private static final int NB_CLIENTS = 15;
+    private static final int NB_CLIENTS_MR = 5;
+ // Flag de test
+    boolean flag = false;
+    boolean flagInsert = true;
+    boolean flagCA = false;
+    boolean flagMR = false;
 
     public DHTCVM() throws Exception {
         super();
@@ -64,12 +70,27 @@ public class DHTCVM extends AbstractCVM {
         
         this.toggleTracing(uri_facade_component);
 
-        // Création de plusieurs clients (NB_CLIENTS)
-        for (int i = 0; i < NB_CLIENTS; i++) {
+        if(flag || flagInsert) {
+        	// Création de plusieurs clients (NB_CLIENTS)
+            for (int i = 0; i < NB_CLIENTS; i++) {
+                String uri_client = AbstractPort.generatePortURI(DHTServicesCI.class);
+
+                String uri_client_component = AbstractComponent.createComponent(
+                        ClientInserteur.class.getCanonicalName(),
+                        new Object[]{
+                                uri_client,
+                                dht_client.copyWithSharable()
+                        });
+
+                this.toggleTracing(uri_client_component);
+            }
+        }
+        if(flag || flagCA) {
+        	//Client pour test de base
             String uri_client = AbstractPort.generatePortURI(DHTServicesCI.class);
 
             String uri_client_component = AbstractComponent.createComponent(
-                    ClientInserteur.class.getCanonicalName(),
+                    ClientCAtest.class.getCanonicalName(),
                     new Object[]{
                             uri_client,
                             dht_client.copyWithSharable()
@@ -77,20 +98,16 @@ public class DHTCVM extends AbstractCVM {
 
             this.toggleTracing(uri_client_component);
         }
-        
-        //Client pour test de base
-        String uri_client = AbstractPort.generatePortURI(DHTServicesCI.class);
-
-        String uri_client_component = AbstractComponent.createComponent(
-                ClientCAtest.class.getCanonicalName(),
-                new Object[]{
-                        uri_client,
-                        dht_client.copyWithSharable()
-                });
-
-        this.toggleTracing(uri_client_component);
-        
-
+        if(flag || flagMR) {
+        	for (int i = 0; i < NB_CLIENTS_MR; i++) {
+        	    String clientUri = "MRClient" + i;
+        	    String uriMR = AbstractComponent.createComponent(
+        	        ClientMRtest.class.getCanonicalName(),
+        	        new Object[]{clientUri, dht_client.copyWithSharable()}
+        	    );
+        	    this.toggleTracing(uriMR);
+        	}
+        }
 
         // Tracer les nœuds pour voir les opérations
         for (String uri : urinode) {
@@ -104,7 +121,7 @@ public class DHTCVM extends AbstractCVM {
         VerboseException.VERBOSE = true;
         try {
             DHTCVM cvm = new DHTCVM();
-            cvm.startStandardLifeCycle(10000000);
+            cvm.startStandardLifeCycle(10000);
             System.exit(0);
         } catch (Exception e) {
             e.printStackTrace();
