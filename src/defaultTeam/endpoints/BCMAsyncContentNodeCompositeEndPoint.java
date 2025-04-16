@@ -43,6 +43,6 @@ public class BCMAsyncContentNodeCompositeEndPoint extends BCMCompositeEndPoint
 
 	@Override
 	public EndPointI<DHTManagementCI> getDHTManagementEndpoint() {
-		return (EndPointI<DHTManagementCI>) this.getEndPoint(DHTManagementCI.class);
+		return (BCMAsyncDHTManagementEndPoint) this.getEndPoint(DHTManagementCI.class);
 	}
 }

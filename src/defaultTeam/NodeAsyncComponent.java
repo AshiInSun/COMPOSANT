@@ -44,19 +44,26 @@ import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
 
 @OfferedInterfaces(offered = {ContentAccessSyncCI.class, MapReduceSyncCI.class, 
         ContentAccessCI.class, MapReduceCI.class, DHTServicesCI.class, 
-        ResultReceptionCI.class, MapReduceResultReceptionCI.class})
+        ResultReceptionCI.class, MapReduceResultReceptionCI.class,
+        DHTManagementCI.class})
 @RequiredInterfaces(required = {ContentAccessSyncCI.class, MapReduceSyncCI.class, 
         ContentAccessCI.class, MapReduceCI.class, 
-        ResultReceptionCI.class, MapReduceResultReceptionCI.class })
+        ResultReceptionCI.class, MapReduceResultReceptionCI.class,
+        DHTManagementCI.class})
 public class NodeAsyncComponent extends AbstractComponent {
 	
 	private IntInterval interval;
 	private String uri;
 	public static final String CONTENT_ACCESS_HANDLER_URI = "caah";
 	public static final String MAP_REDUCE_HANDLER_URI = "mrah";
+	public int NB_NODES;
 	
 	protected List<BCMAsyncContentNodeCompositeEndPoint> fingers;
 	protected List<Integer> fingersOffsets;
+	protected List<SerializablePair<
+    ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>,
+    Integer>>
+	fingerTable;
 	
     private final Map<ContentKeyI, ContentDataI> table;
     //HashMap<String,Stream<ContentDataI>> streamMap;
@@ -76,20 +83,27 @@ public class NodeAsyncComponent extends AbstractComponent {
     protected NodeAsyncComponent(String uri, int debut, int fin,
 		BCMAsyncContentNodeCompositeEndPoint dht_edp,
 		BCMAsyncContentNodeCompositeEndPoint client_edp,
-		BCMAsyncContentNodeCompositeEndPoint server_edp) throws Exception {
+		BCMAsyncContentNodeCompositeEndPoint server_edp,
+		int NB_NODES) throws Exception {
     	
         super(1, 0);
 
         this.interval = new IntInterval(debut, fin);
         this.uri = uri;
-        this.table = new HashMap<>();
+        this.table = new ConcurrentHashMap<>();
         this.mapResults = new ConcurrentHashMap<>();
         this.visited = new HashMap<>();
         this.visitedMap = new HashMap<>();
         this.visitedReduce = new HashMap<>();
         this.client_edp = client_edp;
         this.server_edp = server_edp;
+        this.fingerTable = new ArrayList<>(NB_NODES-1); 
+        for (int i = 0; i < NB_NODES - 1; i++) {
+            fingerTable.add(null);
+        }
+
         if(debut==0) {
+        	System.out.print("here");
         	this.dht_edp = dht_edp;
         }else {
         	this.dht_edp = null;
@@ -105,13 +119,36 @@ public class NodeAsyncComponent extends AbstractComponent {
     }
     @Override
     public void start() throws ComponentStartException {
-    	this.traceMessage("Noeud " + uri + " lancé.");
+    	this.traceMessage("Noeud " + uri + " lancé.\n");
     	try {
 			server_edp.initialiseClientSide(this);
 		} catch (ConnectionException e) {
 			e.printStackTrace();
 		}
+    	this.traceMessage("\n");
         super.start();
+    }
+    
+    
+    private void computeFingerInfo(int nb_nodes) {
+    	//dans l'idée, plus tard peut etre qu'il ne sera utile de recuperer que les informations de nos cordes a nous
+    	//on passerait de n appels à ln(n) appels
+    	System.out.println(nb_nodes);
+    	for(int i=1; i<nb_nodes; i++) {
+    		System.out.println(i);
+    		try {
+				SerializablePair<ContentNodeCompositeEndPointI<
+				ContentAccessCI,
+				ParallelMapReduceCI,
+				DHTManagementCI>,
+				Integer> pairinfo = this.getChordInfo(i);
+				System.out.println(pairinfo.second());
+				fingerTable.add(i, pairinfo);
+			} catch (Exception e) {
+				System.out.println(e);
+				e.printStackTrace();
+			}
+    	}
     }
 
     @Override
@@ -139,14 +176,8 @@ public class NodeAsyncComponent extends AbstractComponent {
     
     //Méthodes de Management
     public void computeChords(String computationURI, int numberOfChords) throws Exception {
-        fingers = new ArrayList<>(numberOfChords);
-        fingersOffsets = new ArrayList<>(numberOfChords);
-
-        for (int i = 0; i < numberOfChords; i++) {
-            fingers.add(null); 
-        }
-
-        this.traceMessage("[" + this.uri + "] Initialisation des cordes pour " + numberOfChords + " fingers.\n");
+    	System.out.println("here");
+        this.computeFingerInfo(numberOfChords);
     }
     
 	public SerializablePair<
@@ -168,7 +199,7 @@ public class NodeAsyncComponent extends AbstractComponent {
 		    	    interval.first()
 		    	);
 	    }else{
-	    	return (server_edp.getDHTManagementEndpoint().getClientSideReference().getChordInfo(offset));
+	    	return (server_edp.getDHTManagementEndpoint().getClientSideReference().getChordInfo(offset-1));
 	    }
 	}
     

@@ -15,7 +15,7 @@ public class DHTCVM extends AbstractCVM {
     private static final int NB_CLIENTS = 4;
     private static final int NB_CLIENTS_MR = 5;
  // Flag de test
-    boolean flag = true;
+    boolean flag = false;
     boolean flagInsert = false;
     boolean flagCA = true;
     boolean flagMR = false;
@@ -61,7 +61,8 @@ public class DHTCVM extends AbstractCVM {
                             ((i + 1) * SIZE_NODES) - 1,
                             dht_node.copyWithSharable(),
                             endPointsNode[i].copyWithSharable(),
-                            endPointsNode[(i + 1) % NB_NODES].copyWithSharable()
+                            endPointsNode[(i + 1) % NB_NODES].copyWithSharable(),
+                            NB_NODES
                     });
             urinode[i] = uri;
             this.toggleTracing(uri);
@@ -107,6 +108,15 @@ public class DHTCVM extends AbstractCVM {
         	    this.toggleTracing(uriMR);
         	}
         }
+        String uriInit = AbstractComponent.createComponent(
+    	    ChordInitializer.class.getCanonicalName(),
+    	    new Object[] {
+    	        NB_NODES,
+    	        dht_node.copyWithSharable()
+    	    }
+    	);
+    	this.toggleTracing(uriInit);
+        	
         super.deploy();
     }
 

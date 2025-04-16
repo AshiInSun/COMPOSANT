@@ -63,8 +63,13 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 
 	@Override
 	public void computeChords(String computationURI, int numberOfChords) throws Exception {
-		// TODO Auto-generated method stub
-		
+		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
+	        try {
+	            ((NodeAsyncComponent) o).computeChords(computationURI, numberOfChords);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+		});
 	}
 
 	@Override

@@ -57,7 +57,7 @@ public class DHTManagementConnector extends DHTMapReduceConnector implements DHT
 
 	@Override
 	public void computeChords(String computationURI, int numberOfChords) throws Exception {
-		// TODO Auto-generated method stub
+		((DHTManagementCI) this.offering).computeChords(computationURI, numberOfChords);
 		
 	}
 

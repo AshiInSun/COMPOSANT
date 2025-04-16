@@ -63,8 +63,7 @@ public class DHTManagementOutboundPort extends DHTMapReduceOutboundPort implemen
 
 	@Override
 	public void computeChords(String computationURI, int numberOfChords) throws Exception {
-		// TODO Auto-generated method stub
-		
+		((DHTManagementCI) this.getConnector()).computeChords(computationURI, numberOfChords);
 	}
 
 	@Override
