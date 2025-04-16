@@ -18,7 +18,7 @@ public class ClientInserteur extends AbstractComponent {
 
     private DHTServicesEndPoint dht_edp;
     private final String clientId;
-    private final int NB_VALUES = 1000;
+    private final int NB_VALUES = 50;
 
     protected ClientInserteur(String uri, DHTServicesEndPoint dht_edp) throws Exception {
         super(1, 0);

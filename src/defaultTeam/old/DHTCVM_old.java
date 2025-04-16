@@ -1,5 +1,7 @@
-package defaultTeam;
+package defaultTeam.old;
 
+import defaultTeam.FacadeAsyncComponent;
+import defaultTeam.NodeAsyncComponent;
 import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
 import defaultTeam.endpoints.DHTServicesEndPoint;
 import fr.sorbonne_u.components.AbstractComponent;

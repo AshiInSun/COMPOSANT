@@ -16,7 +16,7 @@ import defaultTeam.port.sync.DHTMapReduceConnector;
 public class DHTAsyncMapReduceConnector extends DHTMapReduceConnector implements MapReduceCI {
 
     @Override
-    public <R extends Serializable, I extends MapReduceResultReceptionCI> void map(String computationURI,
+    public <R extends Serializable> void map(String computationURI,
 			SelectorI selector, ProcessorI<R> processor) throws Exception {
         ((MapReduceCI)this.offering).map(computationURI, selector, processor);
     }

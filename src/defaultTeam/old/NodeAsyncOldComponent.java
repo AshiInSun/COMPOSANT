@@ -1,6 +1,5 @@
-package defaultTeam;
+package defaultTeam.old;
 import fr.sorbonne_u.components.AbstractComponent;
-
 
 import fr.sorbonne_u.components.annotations.OfferedInterfaces;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
@@ -14,24 +13,19 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessSyncCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentDataI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ResultReceptionCI;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.endpoints.ContentNodeCompositeEndPointI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.management.DHTManagementCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
-import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ParallelMapReduceCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ProcessorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ReductorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 import fr.sorbonne_u.cps.mapreduce.utils.IntInterval;
-import fr.sorbonne_u.cps.mapreduce.utils.SerializablePair;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceResultReceptionCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentAccessCI;
 
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,15 +42,13 @@ import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
 @RequiredInterfaces(required = {ContentAccessSyncCI.class, MapReduceSyncCI.class, 
         ContentAccessCI.class, MapReduceCI.class, 
         ResultReceptionCI.class, MapReduceResultReceptionCI.class })
-public class NodeAsyncComponent extends AbstractComponent {
+public class NodeAsyncOldComponent extends AbstractComponent {
 	
 	private IntInterval interval;
 	private String uri;
 	public static final String CONTENT_ACCESS_HANDLER_URI = "caah";
 	public static final String MAP_REDUCE_HANDLER_URI = "mrah";
 	
-	protected List<BCMAsyncContentNodeCompositeEndPoint> fingers;
-	protected List<Integer> fingersOffsets;
 	
     private final Map<ContentKeyI, ContentDataI> table;
     //HashMap<String,Stream<ContentDataI>> streamMap;
@@ -73,7 +65,7 @@ public class NodeAsyncComponent extends AbstractComponent {
     BCMAsyncContentNodeCompositeEndPoint server_edp; //the next
     BCMAsyncContentNodeCompositeEndPoint dht_edp; //only for the first node : connexion to facade
     
-    protected NodeAsyncComponent(String uri, int debut, int fin,
+    protected NodeAsyncOldComponent(String uri, int debut, int fin,
 		BCMAsyncContentNodeCompositeEndPoint dht_edp,
 		BCMAsyncContentNodeCompositeEndPoint client_edp,
 		BCMAsyncContentNodeCompositeEndPoint server_edp) throws Exception {
@@ -136,41 +128,6 @@ public class NodeAsyncComponent extends AbstractComponent {
     public String getURI() {
     	return this.uri;
     }
-    
-    //Méthodes de Management
-    public void computeChords(String computationURI, int numberOfChords) throws Exception {
-        fingers = new ArrayList<>(numberOfChords);
-        fingersOffsets = new ArrayList<>(numberOfChords);
-
-        for (int i = 0; i < numberOfChords; i++) {
-            fingers.add(null); 
-        }
-
-        this.traceMessage("[" + this.uri + "] Initialisation des cordes pour " + numberOfChords + " fingers.\n");
-    }
-    
-	public SerializablePair<
-	    ContentNodeCompositeEndPointI<
-	        ContentAccessCI,
-	        ParallelMapReduceCI,
-	        DHTManagementCI>,
-	    Integer> getChordInfo(int offset) throws Exception {
-	
-	    if (offset == 0) {
-	    	return new SerializablePair<
-		    	    ContentNodeCompositeEndPointI<
-		    	        ContentAccessCI,
-		    	        ParallelMapReduceCI,
-		    	        DHTManagementCI>,
-		    	    Integer
-		    	>(
-		    	    client_edp,
-		    	    interval.first()
-		    	);
-	    }else{
-	    	return (server_edp.getDHTManagementEndpoint().getClientSideReference().getChordInfo(offset));
-	    }
-	}
     
     //Méthodes Asynchrones
     public <CI extends ResultReceptionCI> void get(

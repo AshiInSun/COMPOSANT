@@ -41,7 +41,20 @@ public class ClientCAtest extends AbstractComponent {
     @Override
     public void execute() throws Exception {
         this.traceMessage("ClientCA démarre...\n");
-        
+     // === Test 0 : la clef n'existe ===
+        ContentKeyI fakeKey = new ContentKey("clef-inexistante-xyz123"+clientId);
+
+        ContentDataI result = dht_edp.getClientSideReference().get(fakeKey);
+
+        if (result == null) {
+            this.traceMessage("✅ Clé inexistante non trouvée, comportement correct.\n");
+        } else {
+        	try {
+            throw new AssertionError("❌ Clé inexistante retournée avec une valeur non-nulle : " + result);
+        	}catch (AssertionError e) {
+    	    	System.out.println("❌ AssertionError : " + e.getMessage() + "\n");
+        	}
+        }
         // === Test 1 : remplacement de valeur ===
         ContentKeyI keyReplace = new ContentKey("key-replace");
         ContentDataI v1 = new Personne("Ancienne", 25);

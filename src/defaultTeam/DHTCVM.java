@@ -10,14 +10,14 @@ import fr.sorbonne_u.exceptions.VerboseException;
 
 public class DHTCVM extends AbstractCVM {
 
-    private static final int NB_NODES = 2;
-    private static final int SIZE_NODES = 100;
-    private static final int NB_CLIENTS = 15;
+    private static final int NB_NODES = 8;
+    private static final int SIZE_NODES = 30;
+    private static final int NB_CLIENTS = 4;
     private static final int NB_CLIENTS_MR = 5;
  // Flag de test
-    boolean flag = false;
-    boolean flagInsert = true;
-    boolean flagCA = false;
+    boolean flag = true;
+    boolean flagInsert = false;
+    boolean flagCA = true;
     boolean flagMR = false;
 
     public DHTCVM() throws Exception {
@@ -53,7 +53,6 @@ public class DHTCVM extends AbstractCVM {
                 });
         
         for (int i = 0; i < NB_NODES; i++) {
-
             String uri = AbstractComponent.createComponent(
                     NodeAsyncComponent.class.getCanonicalName(),
                     new Object[]{
@@ -108,12 +107,6 @@ public class DHTCVM extends AbstractCVM {
         	    this.toggleTracing(uriMR);
         	}
         }
-
-        // Tracer les nœuds pour voir les opérations
-        for (String uri : urinode) {
-            this.toggleTracing(uri);
-        }
-
         super.deploy();
     }
 
@@ -121,7 +114,7 @@ public class DHTCVM extends AbstractCVM {
         VerboseException.VERBOSE = true;
         try {
             DHTCVM cvm = new DHTCVM();
-            cvm.startStandardLifeCycle(10000);
+            cvm.startStandardLifeCycle(1000000);
             System.exit(0);
         } catch (Exception e) {
             e.printStackTrace();
