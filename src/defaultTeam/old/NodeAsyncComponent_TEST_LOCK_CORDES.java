@@ -1,4 +1,4 @@
-package defaultTeam;
+package defaultTeam.old;
 import fr.sorbonne_u.components.AbstractComponent;
 
 
@@ -51,7 +51,7 @@ import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
         ContentAccessCI.class, MapReduceCI.class, 
         ResultReceptionCI.class, MapReduceResultReceptionCI.class,
         DHTManagementCI.class})
-public class NodeAsyncComponent extends AbstractComponent {
+public class NodeAsyncComponent_TEST_LOCK_CORDES extends AbstractComponent {
 	
 	private IntInterval interval;
 	private String uri;
@@ -83,7 +83,7 @@ public class NodeAsyncComponent extends AbstractComponent {
     BCMAsyncContentNodeCompositeEndPoint server_edp; //the next
     BCMAsyncContentNodeCompositeEndPoint dht_edp; //only for the first node : connexion to facade
     
-    protected NodeAsyncComponent(String uri, int debut, int fin,
+    protected NodeAsyncComponent_TEST_LOCK_CORDES(String uri, int debut, int fin,
 		BCMAsyncContentNodeCompositeEndPoint dht_edp,
 		BCMAsyncContentNodeCompositeEndPoint client_edp,
 		BCMAsyncContentNodeCompositeEndPoint server_edp,
@@ -100,8 +100,8 @@ public class NodeAsyncComponent extends AbstractComponent {
         this.visitedReduce = new HashMap<>();
         this.client_edp = client_edp;
         this.server_edp = server_edp;
-        this.fingerTable = new ArrayList<>(4); 
-        for (int i = 0; i < 4; i++) {
+        this.fingerTable = new ArrayList<>(NB_NODES-1); 
+        for (int i = 0; i < NB_NODES - 1; i++) {
             fingerTable.add(null);
         }
 
@@ -157,36 +157,38 @@ public class NodeAsyncComponent extends AbstractComponent {
     
     //Méthodes de Management
     public void computeChords(String computationURI, int numberOfChords) throws Exception {
-    	if(numberOfChords!=0) {
-	    	List<SerializablePair<
-	        ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>,
-	        Integer>>
-	    	tempTable = new ArrayList<>(numberOfChords-1); 
-	    	for(int i = 0; i <= 4 && (1 << i) < numberOfChords; i++) {
-	    		int e = (1<<i);
-	    		
-	    		SerializablePair<
-	            ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>,
-	            Integer> pairinfo = getChordInfo(e);
-	    		System.out.println(this.uri +" : "+ e + "->  "+ pairinfo.second());
-	    		tempTable.add(pairinfo);
-	    	}
-	    	try {
-	            server_edp.getDHTManagementEndpoint().getClientSideReference()
-	                .computeChords(computationURI, numberOfChords-1);
-	        } catch (Exception e) {
-	            this.traceMessage("Erreur lors de la propagation de computeChords : " + e.getMessage() + "\n");
-	        }
-    	}else {
-    		//
+    	List<SerializablePair<
+        ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>,
+        Integer>>
+    	tempTable = new ArrayList<>(numberOfChords-1); 
+    	for(int i =1; i<numberOfChords; i++) {
+    		SerializablePair<
+    	    ContentNodeCompositeEndPointI<
+    	        ContentAccessCI,
+    	        ParallelMapReduceCI,
+    	        DHTManagementCI>,
+    	    Integer> pairinfo = getChordInfo(i);
+    		tempTable.add(pairinfo);
+    	}
+    	globalLock.writeLock().lock();
+    	try {
+    		System.out.println("here");
+    	}finally {
+    		globalLock.writeLock().unlock();
     	}
     }
     
 	public SerializablePair<
-	    ContentNodeCompositeEndPointI<ContentAccessCI,
-	        ParallelMapReduceCI,DHTManagementCI>,
+	    ContentNodeCompositeEndPointI<
+	        ContentAccessCI,
+	        ParallelMapReduceCI,
+	        DHTManagementCI>,
 	    Integer> getChordInfo(int offset) throws Exception {
+	
+		globalLock.readLock().lock();
+    	try {
 		    if (offset == 0) {
+		    	System.out.println(interval.first());
 		    	return new SerializablePair<
 			    	    ContentNodeCompositeEndPointI<
 			    	        ContentAccessCI,
@@ -194,18 +196,23 @@ public class NodeAsyncComponent extends AbstractComponent {
 			    	        DHTManagementCI>,
 			    	    Integer
 			    	>(
-			    	    (ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>) (client_edp.copyWithSharable()),
+			    	    client_edp,
 			    	    interval.first()
 			    	);
 		    }else{
 		    	return (server_edp.getDHTManagementEndpoint().getClientSideReference().getChordInfo(offset-1));
 		    }
+    	}finally {
+    		globalLock.readLock().unlock();
+    	}
 	}
     
     //Méthodes Asynchrones
     public <CI extends ResultReceptionCI> void get(
     		String computationURI, ContentKeyI key, EndPointI<CI> caller) throws Exception {
-    
+    	
+    		globalLock.readLock().lock();
+    		try {
     		int h = key.hashCode();
     		this.traceMessage(this.uri +" uri || comput : "+computationURI + " || apell a get()\n");
 		
@@ -238,11 +245,15 @@ public class NodeAsyncComponent extends AbstractComponent {
 				visited.put(computationURI, true);
 				(server_edp.getContentAccessEndpoint()).getClientSideReference().get(computationURI, key, caller.copyWithSharable());
 			}
+    		}finally {
+    			globalLock.readLock().unlock();
+    		}
     }
     
     public <CI extends ResultReceptionCI> void put(
     		String computationURI, ContentKeyI key, ContentDataI value, EndPointI<CI> caller) throws Exception {
-
+    	globalLock.readLock().lock();
+		try {
 			int h = key.hashCode();
 			
 			if ( interval.in(h) ) {
@@ -274,9 +285,14 @@ public class NodeAsyncComponent extends AbstractComponent {
 				visited.put(computationURI, true);
 				(server_edp.getContentAccessEndpoint().getClientSideReference()).put(computationURI, key, value, caller.copyWithSharable());
 			}
+		} finally {
+            globalLock.readLock().unlock();;  
+        }
 	}
     public <CI extends ResultReceptionCI> void remove(String computationURI, ContentKeyI key, EndPointI<CI> caller) throws Exception {
 		
+    	globalLock.readLock().lock();
+    	try {
 	    	int h = key.hashCode();
 			
 			if ( interval.in(h) ) {
@@ -306,6 +322,9 @@ public class NodeAsyncComponent extends AbstractComponent {
 				visited.put(computationURI, true);
 				(server_edp.getContentAccessEndpoint().getClientSideReference()).remove(computationURI, key, caller.copyWithSharable());
 			}
+    	}finally {
+    		globalLock.readLock().unlock();
+    	}
 	}
     
     @SuppressWarnings("unchecked")
@@ -315,6 +334,8 @@ public class NodeAsyncComponent extends AbstractComponent {
     		"Parametre(s) de map non valides";
 		
 		this.traceMessage("Execute map...\n");
+		globalLock.readLock().lock();
+		try {
 		CompletableFuture<Boolean> cfuture = new CompletableFuture<>();
 		isMapDone.putIfAbsent(computationURI, cfuture);
 		
@@ -339,6 +360,9 @@ public class NodeAsyncComponent extends AbstractComponent {
         }
         this.traceMessage("- Passe au noeud suivant\n");
         server_edp.getMapReduceEndpoint().getClientSideReference().map(computationURI, selector, processor);
+		}finally {
+			globalLock.readLock().unlock();
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -349,6 +373,8 @@ public class NodeAsyncComponent extends AbstractComponent {
 		assert computationURI != null && !computationURI.isEmpty() && reductor != null && combinator != null && caller != null :
     		"Parametre(s) de reduce non valides";
 		this.traceMessage("Reduce waiting for map...\n");	
+		globalLock.readLock().lock();
+		try {
 		CompletableFuture<Boolean> cfuture = new CompletableFuture<>();
 		isMapDone.putIfAbsent(computationURI, cfuture);
 		cfuture = isMapDone.get(computationURI);
@@ -381,6 +407,9 @@ public class NodeAsyncComponent extends AbstractComponent {
 		A reduced = stream.reduce(currentAcc, reductor, combinator);
 		this.traceMessage("- Passe au noeud suivant\n");
 		server_edp.getMapReduceEndpoint().getClientSideReference().reduce(computationURI, reductor, combinator, currentAcc, reduced, caller.copyWithSharable());
+		}finally {
+			globalLock.readLock().unlock();
+		}
 	}
     
     

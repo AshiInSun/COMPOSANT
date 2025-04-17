@@ -10,6 +10,7 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.management.DHTManagementCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceResultReceptionCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
+import fr.sorbonne_u.cps.mapreduce.utils.URIGenerator;
 import fr.sorbonne_u.components.annotations.OfferedInterfaces;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
 
@@ -37,7 +38,8 @@ public class ChordInitializer extends AbstractComponent {
         this.traceMessage(">>> Initialisation des cordes...\n");
         managementEndpoint.initialiseClientSide(this);
         this.traceMessage("→ Appel de computeChords sur \n");
-        managementEndpoint.getDHTManagementEndpoint().getClientSideReference().computeChords("CHORD_INIT", numberOfChords);
+        String computationURI = URIGenerator.generateURI();
+    	managementEndpoint.getDHTManagementEndpoint().getClientSideReference().computeChords(computationURI, numberOfChords);
         managementEndpoint.cleanUpClientSide();
         
 

@@ -31,6 +31,7 @@ public class DHTCVM extends AbstractCVM {
 
         // Point de connexion partagé pour la façade et les nœuds
         BCMAsyncContentNodeCompositeEndPoint dht_node = new BCMAsyncContentNodeCompositeEndPoint();
+        BCMAsyncContentNodeCompositeEndPoint chord_edp = new BCMAsyncContentNodeCompositeEndPoint();
         DHTServicesEndPoint dht_client =
           		 new DHTServicesEndPoint(uri_facade);
         // Création des nœuds
@@ -49,7 +50,8 @@ public class DHTCVM extends AbstractCVM {
                 new Object[]{
                         uri_facade,
                         dht_client.copyWithSharable(),  // endpoint côté client de la façade
-                        dht_node.copyWithSharable()
+                        dht_node.copyWithSharable(),
+                        NB_NODES
                 });
         
         for (int i = 0; i < NB_NODES; i++) {
@@ -108,14 +110,6 @@ public class DHTCVM extends AbstractCVM {
         	    this.toggleTracing(uriMR);
         	}
         }
-        String uriInit = AbstractComponent.createComponent(
-    	    ChordInitializer.class.getCanonicalName(),
-    	    new Object[] {
-    	        NB_NODES,
-    	        dht_node.copyWithSharable()
-    	    }
-    	);
-    	this.toggleTracing(uriInit);
         	
         super.deploy();
     }
