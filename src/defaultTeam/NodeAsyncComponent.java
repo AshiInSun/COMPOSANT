@@ -140,6 +140,10 @@ public class NodeAsyncComponent extends AbstractComponent {
 
     @Override
     public void shutdown() throws ComponentShutdownException {
+    	for(SerializablePair<ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>, Integer>
+    	fingerInfo : fingerTable) {
+    		fingerInfo.first().cleanUpClientSide();
+    	}
         if(interval.first() == 0) {
         	dht_edp.cleanUpServerSide();
         }
@@ -169,8 +173,10 @@ public class NodeAsyncComponent extends AbstractComponent {
 	            ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>,
 	            Integer> pairinfo = getChordInfo(e);
 	    		System.out.println(this.uri +" : "+ e + "->  "+ pairinfo.second());
+	    		pairinfo.first().initialiseClientSide(this);
 	    		tempTable.add(pairinfo);
 	    	}
+	    	this.fingerTable = tempTable;
 	    	try {
 	            server_edp.getDHTManagementEndpoint().getClientSideReference()
 	                .computeChords(computationURI, numberOfChords-1);
@@ -234,9 +240,25 @@ public class NodeAsyncComponent extends AbstractComponent {
 			        }
 					return;
 				}
+				BCMAsyncContentNodeCompositeEndPoint temp = null;
+				int tempDist = Integer.MAX_VALUE;
+				for(SerializablePair<
+		                ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>,
+		                Integer> fingerInfo : fingerTable) {
+					if (fingerInfo == null) continue;
+					int dist = h - fingerInfo.second();
+					
+					if (dist >= 0 && dist < tempDist) {
+		                tempDist = dist;
+		                temp = (BCMAsyncContentNodeCompositeEndPoint) fingerInfo.first();
+		            }
+				}
 				
+				if(temp==null) {
+					temp=server_edp;
+				}
 				visited.put(computationURI, true);
-				(server_edp.getContentAccessEndpoint()).getClientSideReference().get(computationURI, key, caller.copyWithSharable());
+				(temp.getContentAccessEndpoint()).getClientSideReference().get(computationURI, key, caller.copyWithSharable());
 			}
     }
     
@@ -270,9 +292,26 @@ public class NodeAsyncComponent extends AbstractComponent {
 			        }
 					return;
 				}
+				BCMAsyncContentNodeCompositeEndPoint temp = null;
+				int tempDist = Integer.MAX_VALUE;
+				for(SerializablePair<
+		                ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>,
+		                Integer> fingerInfo : fingerTable) {
+					if (fingerInfo == null) continue;
+					int dist = h - fingerInfo.second();
+					
+					if (dist >= 0 && dist < tempDist) {
+		                tempDist = dist;
+		                temp = (BCMAsyncContentNodeCompositeEndPoint) fingerInfo.first();
+		                System.out.println(fingerInfo.first());
+		            }
+				}
 				
+				if(temp==null) {
+					temp=server_edp;
+				}
 				visited.put(computationURI, true);
-				(server_edp.getContentAccessEndpoint().getClientSideReference()).put(computationURI, key, value, caller.copyWithSharable());
+				(temp.getContentAccessEndpoint().getClientSideReference()).put(computationURI, key, value, caller.copyWithSharable());	
 			}
 	}
     public <CI extends ResultReceptionCI> void remove(String computationURI, ContentKeyI key, EndPointI<CI> caller) throws Exception {
@@ -302,9 +341,26 @@ public class NodeAsyncComponent extends AbstractComponent {
 					}
 					return;
 				}
+				BCMAsyncContentNodeCompositeEndPoint temp = null;
+				int tempDist = Integer.MAX_VALUE;
+				for(SerializablePair<
+		                ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>,
+		                Integer> fingerInfo : fingerTable) {
+					if (fingerInfo == null) continue;
+					int dist = h - fingerInfo.second();
+					
+					if (dist >= 0 && dist < tempDist) {
+		                tempDist = dist;
+		                temp = (BCMAsyncContentNodeCompositeEndPoint) fingerInfo.first();
+		                
+		            }
+				}
 				
+				if(temp==null) {
+					temp=server_edp;
+				}
 				visited.put(computationURI, true);
-				(server_edp.getContentAccessEndpoint().getClientSideReference()).remove(computationURI, key, caller.copyWithSharable());
+				(temp.getContentAccessEndpoint().getClientSideReference()).remove(computationURI, key, caller.copyWithSharable());
 			}
 	}
     
