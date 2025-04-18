@@ -60,8 +60,13 @@ public class DHTAsyncParallelMapReduceInboundPort extends DHTMapReduceInboundPor
 	@Override
 	public <R extends Serializable> void parallelMap(String computationURI, SelectorI selector, ProcessorI<R> processor,
 			ParallelismPolicyI parallelismPolicy) throws Exception {
-		// TODO Auto-generated method stub
-		
+		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
+	        try {
+	            ((NodeAsyncComponent) o).parallelMap(computationURI, selector, processor, parallelismPolicy);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+		});
 	}
 
 
@@ -70,7 +75,12 @@ public class DHTAsyncParallelMapReduceInboundPort extends DHTMapReduceInboundPor
 	public <A extends Serializable, R, I extends MapReduceResultReceptionCI> void parallelReduce(String computationURI,
 			ReductorI<A, R> reductor, CombinatorI<A> combinator, A identityAcc, A currentAcc,
 			ParallelismPolicyI parallelismPolicy, EndPointI<I> caller) throws Exception {
-		// TODO Auto-generated method stub
-		
+		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
+	        try {
+	            ((NodeAsyncComponent) o).parallelReduce(computationURI, reductor, combinator, identityAcc, currentAcc, parallelismPolicy, caller);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+		});
 	} 
 }

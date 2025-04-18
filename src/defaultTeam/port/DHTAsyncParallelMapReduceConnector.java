@@ -36,14 +36,12 @@ public class DHTAsyncParallelMapReduceConnector extends DHTMapReduceConnector im
 	@Override
 	public <R extends Serializable> void parallelMap(String computationURI, SelectorI selector, ProcessorI<R> processor,
 			ParallelismPolicyI parallelismPolicy) throws Exception {
-		// TODO Auto-generated method stub
-		
+		((ParallelMapReduceCI)this.offering).parallelMap(computationURI, selector, processor, parallelismPolicy);
 	}
 	@Override
 	public <A extends Serializable, R, I extends MapReduceResultReceptionCI> void parallelReduce(String computationURI,
 			ReductorI<A, R> reductor, CombinatorI<A> combinator, A identityAcc, A currentAcc,
 			ParallelismPolicyI parallelismPolicy, EndPointI<I> caller) throws Exception {
-		// TODO Auto-generated method stub
-		
+		((ParallelMapReduceCI)this.offering).parallelReduce(computationURI, reductor, combinator, identityAcc, currentAcc, parallelismPolicy, caller);
 	}
 }

@@ -1,6 +1,7 @@
 package defaultTeam;
 
 import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
+
 import defaultTeam.endpoints.DHTServicesEndPoint;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.AbstractPort;
@@ -14,11 +15,13 @@ public class DHTCVM extends AbstractCVM {
     private static final int SIZE_NODES = 30;
     private static final int NB_CLIENTS = 4;
     private static final int NB_CLIENTS_MR = 5;
+    private static final int NB_CLIENTS_MR_MASSIV = 1;
  // Flag de test
-    boolean flag = true;
+    boolean flag = false;
     boolean flagInsert = false;
-    boolean flagCA = true;
+    boolean flagCA = false;
     boolean flagMR = false;
+    boolean flagMassivMR = true;
 
     public DHTCVM() throws Exception {
         super();
@@ -105,6 +108,16 @@ public class DHTCVM extends AbstractCVM {
         	    String clientUri = "MRClient" + i;
         	    String uriMR = AbstractComponent.createComponent(
         	        ClientMRtest.class.getCanonicalName(),
+        	        new Object[]{clientUri, dht_client.copyWithSharable()}
+        	    );
+        	    this.toggleTracing(uriMR);
+        	}
+        }
+        if(flag || flagMassivMR) {
+        	for (int i = 0; i < NB_CLIENTS_MR_MASSIV; i++) {
+        	    String clientUri = "MRClientMassiv " + i;
+        	    String uriMR = AbstractComponent.createComponent(
+        	    		ClientMRMassiveTest.class.getCanonicalName(),
         	        new Object[]{clientUri, dht_client.copyWithSharable()}
         	    );
         	    this.toggleTracing(uriMR);

@@ -1,6 +1,10 @@
 package defaultTeam;
 import java.io.Serializable;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceResultReceptionCI;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -47,6 +51,13 @@ public class FacadeAsyncComponent extends AbstractComponent {
 		= new ConcurrentHashMap<>();
 	protected final ConcurrentHashMap<String, CompletableFuture<?>> pendingResultsMapReduce 
 		= new ConcurrentHashMap<>();
+	//Map pour le parrallel map reduce
+	private final Map<String, List<Serializable>> partialResultsMapReduce = new ConcurrentHashMap<>();
+	private final Map<String, Integer> accCount = new ConcurrentHashMap<>();
+	private final Map<String, CombinatorI<Serializable>> combinators = new ConcurrentHashMap<>();
+	private final Map<String, ReductorI<Serializable, Serializable>> reductors = new ConcurrentHashMap<>();
+	private final Map<String, Serializable> identityAccumulators = new ConcurrentHashMap<>();
+	//
 	private final ReentrantReadWriteLock globalLock = new ReentrantReadWriteLock(true); 
 	public static final String CONTENT_ACCESS_HANDLER_URI = "caah";
 	public static final String MAP_REDUCE_HANDLER_URI = "mrah";
@@ -190,12 +201,19 @@ public class FacadeAsyncComponent extends AbstractComponent {
 			
 			String computationURI = URIGenerator.generateURI("MAP_REDUCE");
 			CompletableFuture<A> cfuture = new CompletableFuture<>();
+			
 			pendingResultsMapReduce.put(computationURI, cfuture);
-			server_edp.getMapReduceEndpoint().getClientSideReference().map(computationURI, selector, processor);
+			combinators.put(computationURI, (CombinatorI<Serializable>) combinator);
+			reductors.put(computationURI, (ReductorI<Serializable, Serializable>) reductor);
+			identityAccumulators.put(computationURI, initialAcc);
+			accCount.put(computationURI, 0);
+			partialResultsMapReduce.put(computationURI, new ArrayList<>());
+			
+			AllNodesPolicy police = new AllNodesPolicy();
+			server_edp.getMapReduceEndpoint().getClientSideReference().parallelMap(computationURI, selector, processor, police);
 			A identityAcc = initialAcc;
-			server_edp.getMapReduceEndpoint().getClientSideReference().reduce(
-					computationURI, reductor, combinator, initialAcc, identityAcc,mapreduce_caller.copyWithSharable()
-					);
+			server_edp.getMapReduceEndpoint().getClientSideReference().parallelReduce(
+					computationURI, reductor, combinator, initialAcc, identityAcc, police, mapreduce_caller.copyWithSharable());
 			A res = cfuture.get();
 			server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);
 			return (A) res;
@@ -220,12 +238,45 @@ public class FacadeAsyncComponent extends AbstractComponent {
 	public void acceptResult(String computationURI, String emitterId, Serializable acc) throws Exception {
 		globalLock.readLock().lock();
 		try {
-			CompletableFuture<Serializable> future = 
-					(CompletableFuture<Serializable>) pendingResultsMapReduce.remove(computationURI);
-	        if (future != null) {
-	            future.complete((Serializable) acc);
-	        } else {
-	            throw new Exception("No pending request found for computation URI: " + computationURI);
+			
+			List<Serializable> partials = partialResultsMapReduce.get(computationURI);
+	        if (partials == null) {
+	            throw new Exception("No partial result list found for computation URI: " + computationURI);
+	        }
+	        System.out.println(computationURI + "accept : " + acc);
+	        partials.add(acc);
+	        int count = accCount.computeIfPresent(computationURI, (k, v) -> v + 1);
+			
+	        this.traceMessage("[Facade] Reçu " + count + "/" + NB_NODES + " résultats pour " + computationURI + "\n");
+	        
+	        if (count == NB_NODES) {
+	            this.traceMessage("[Facade] Tous les accumulateurs reçus pour " + computationURI + ". Réduction finale...\n");
+
+	            // Réduction finale avec combinator
+	            CombinatorI<Serializable> combinator = combinators.get(computationURI);
+	            ReductorI<Serializable, Serializable> reductor = reductors.get(computationURI);
+	            Serializable identityAcc = identityAccumulators.get(computationURI);
+	            Serializable finalAcc = partials.stream()
+	                .reduce(identityAcc, reductor, combinator);
+
+	            // Complétion de la future
+	            CompletableFuture<Serializable> future =
+	                (CompletableFuture<Serializable>) pendingResultsMapReduce.remove(computationURI);
+	            if (future != null) {
+	            	System.out.println(computationURI + "accept FINAL : " + finalAcc);
+	                future.complete(finalAcc);
+	            } else {
+	                throw new Exception("No pending future found for computation URI: " + computationURI);
+	            }
+
+	            // Nettoyage
+	            partialResultsMapReduce.remove(computationURI);
+	            accCount.remove(computationURI);
+	            combinators.remove(computationURI);
+	            reductors.remove(computationURI);
+	            identityAccumulators.remove(computationURI);
+
+	            this.traceMessage("[Facade] Réduction finale terminée pour " + computationURI + ".\n");
 	        }
 		}finally {
 			globalLock.readLock().unlock();
