@@ -25,8 +25,7 @@ public class DHTManagementConnector extends DHTMapReduceConnector implements DHT
 
 	@Override
 	public void initialiseContent(NodeContentI content) throws Exception {
-		// TODO Auto-generated method stub
-		
+		((DHTManagementCI) this.offering).initialiseContent(content);
 	}
 
 	@Override
@@ -44,8 +43,7 @@ public class DHTManagementConnector extends DHTMapReduceConnector implements DHT
 	@Override
 	public <CI extends ResultReceptionCI> void split(String computationURI, LoadPolicyI loadPolicy,
 			EndPointI<CI> caller) throws Exception {
-		// TODO Auto-generated method stub
-		
+		((DHTManagementCI) this.offering).split(computationURI, loadPolicy, caller);
 	}
 
 	@Override
@@ -58,7 +56,6 @@ public class DHTManagementConnector extends DHTMapReduceConnector implements DHT
 	@Override
 	public void computeChords(String computationURI, int numberOfChords) throws Exception {
 		((DHTManagementCI) this.offering).computeChords(computationURI, numberOfChords);
-		
 	}
 
 	@Override

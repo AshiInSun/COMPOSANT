@@ -17,6 +17,7 @@ import defaultTeam.endpoints.ResultEndPoint;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.OfferedInterfaces;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
+import fr.sorbonne_u.components.endpoints.EndPointI;
 import fr.sorbonne_u.components.exceptions.ComponentShutdownException;
 import fr.sorbonne_u.components.exceptions.ComponentStartException;
 import fr.sorbonne_u.components.exceptions.ConnectionException;
@@ -27,6 +28,7 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ContentKeyI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.content.ResultReceptionCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.management.DHTManagementCI;
+import fr.sorbonne_u.cps.dht_mapreduce.interfaces.management.LoadPolicyI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.CombinatorI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceCI;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.MapReduceSyncCI;
@@ -40,7 +42,7 @@ import fr.sorbonne_u.cps.mapreduce.utils.URIGenerator;
 		DHTManagementCI.class, MapReduceCI.class, ContentAccessSyncCI.class})
 @RequiredInterfaces(required = {
 		DHTServicesCI.class, ContentAccessSyncCI.class, MapReduceSyncCI.class,
-		MapReduceCI.class, ContentAccessCI.class, DHTManagementCI.class})
+		MapReduceCI.class, ContentAccessCI.class, DHTManagementCI.class, ResultReceptionCI.class})
 public class FacadeAsyncComponent extends AbstractComponent {
 
 	private BCMAsyncContentNodeCompositeEndPoint server_edp;
@@ -63,6 +65,9 @@ public class FacadeAsyncComponent extends AbstractComponent {
 	public static final String MAP_REDUCE_HANDLER_URI = "mrah";
 	public static final String ACCEPT_RESULT_HANDLER_URI = "arah";
 	private int NB_NODES;
+	private int globalPutCounter = 0;
+	private static final int GLOBAL_SPLIT_THRESHOLD = 144;
+	private final LoadPolicyI defaultPolicy = new LoadPolicy(90, 40);
 
     protected FacadeAsyncComponent(
     		String uri, DHTServicesEndPoint client_edp , 
@@ -79,16 +84,16 @@ public class FacadeAsyncComponent extends AbstractComponent {
 		this.caller.initialiseServerSide(this);
 		this.mapreduce_caller = new MapReduceResultEndPoint(mapReduceCallerURI);
 		this.mapreduce_caller.initialiseServerSide(this);
-		
+
 		//OTHERS ENDPOINTS
         this.client_edp = client_edp;
         client_edp.initialiseServerSide(this);
         this.server_edp = server_edp;
         
         //PARRALELISM
-        this.createNewExecutorService(CONTENT_ACCESS_HANDLER_URI, 4,false);
-        this.createNewExecutorService(MAP_REDUCE_HANDLER_URI, 4,false);
-        this.createNewExecutorService(ACCEPT_RESULT_HANDLER_URI, 4,false);
+        this.createNewExecutorService(CONTENT_ACCESS_HANDLER_URI, 4,true);
+        this.createNewExecutorService(MAP_REDUCE_HANDLER_URI, 4,true);
+        this.createNewExecutorService(ACCEPT_RESULT_HANDLER_URI, 4,true);
         this.traceMessage("FacadeAsyncComponent initialisé" );
     }
 
@@ -107,7 +112,12 @@ public class FacadeAsyncComponent extends AbstractComponent {
         super.execute();
         try {
         	String computationURI = URIGenerator.generateURI();
-			this.computeChords(computationURI, NB_NODES);
+        	this.globalLock.writeLock().lock();
+        	try {
+        		this.computeChords(computationURI, NB_NODES);
+        	}finally {
+        		this.globalLock.writeLock().unlock();
+        	}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -129,15 +139,37 @@ public class FacadeAsyncComponent extends AbstractComponent {
     }
     
     public void computeChords(String computationURI, int numberOfChords) throws Exception {
-    	globalLock.writeLock().lock();
-	        try {
-	        	this.traceMessage("ComputeChordFromFacade...\n");
-	            server_edp.getDHTManagementEndpoint().getClientSideReference().computeChords(computationURI, numberOfChords);
-	        } finally {
-	        	this.traceMessage("ComputeChordFromFacade ended\n");
-	            globalLock.writeLock().unlock();
-	        }
+    	this.traceMessage("ComputeChordFromFacade...\n");
+        server_edp.getDHTManagementEndpoint().getClientSideReference().computeChords(computationURI, numberOfChords);
+        this.traceMessage("ComputeChordEnded...\n");
 	}
+    public void split(String computationURI, LoadPolicyI loadPolicy, EndPointI<ResultReceptionCI> caller) throws Exception {
+    	this.traceMessage("Split..\n");
+		String computationURI_split = URIGenerator.generateURI();
+		CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
+		pendingResults.put(computationURI_split, cfuture);
+		server_edp.getDHTManagementEndpoint().getClientSideReference()
+			.split(computationURI_split, defaultPolicy, caller.copyWithSharable());
+		ContentDataI res = cfuture.get();
+        this.traceMessage("Split ended\n");
+	}
+    public void ComputeSplit(String computationURI, LoadPolicyI loadPolicy, EndPointI<ResultReceptionCI> caller, int numberOfChords) throws Exception{
+    	try {
+			globalLock.writeLock().lock();
+			if(globalPutCounter >= GLOBAL_SPLIT_THRESHOLD) {
+				globalPutCounter = 0;
+				traceMessage("⛏ Déclenchement du split en tâche de fond...\n");
+				this.split(computationURI, loadPolicy, caller);
+				traceMessage("⛏ tache de fond fini...\n");
+				this.computeChords(computationURI, numberOfChords);
+
+			}else {
+				traceMessage("⛏ already did\n");
+			}
+		} finally {
+			globalLock.writeLock().unlock();
+		}
+    }
 
 	public <CI extends ResultReceptionCI>ContentDataI get(ContentKeyI key) throws Exception {
 		globalLock.readLock().lock();
@@ -157,9 +189,14 @@ public class FacadeAsyncComponent extends AbstractComponent {
 		}
 	}
 	
-	public <CI extends ResultReceptionCI>ContentDataI put(ContentKeyI key, ContentDataI value) throws Exception {
+	public <CI extends ResultReceptionCI> ContentDataI put(ContentKeyI key, ContentDataI value) throws Exception {
+		String computationURI_split = URIGenerator.generateURI();
+		// Si seuil atteint, déclencher split de manière asynchrone
+		
+		// Exécution normale du put sous readLock
 		globalLock.readLock().lock();
 		try {
+			globalPutCounter++;
 			String computationURI = URIGenerator.generateURI();
 			CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
 			pendingResults.put(computationURI, cfuture);
@@ -167,10 +204,16 @@ public class FacadeAsyncComponent extends AbstractComponent {
 			ContentDataI res = cfuture.get();
 			server_edp.getContentAccessEndpoint().getClientSideReference().clearComputation(computationURI);
 			return res;
-		}finally {
+		} finally {
 			globalLock.readLock().unlock();
+			if (globalPutCounter >= GLOBAL_SPLIT_THRESHOLD ) {
+				CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
+				pendingResults.put(computationURI_split, cfuture);
+				this.ComputeSplit(computationURI_split, defaultPolicy, caller, NB_NODES);
+			}
 		}
 	}
+
 	
 	public ContentDataI remove(ContentKeyI key) throws Exception {
 		globalLock.readLock().lock();
@@ -212,8 +255,8 @@ public class FacadeAsyncComponent extends AbstractComponent {
 			AllNodesPolicy police = new AllNodesPolicy();
 			server_edp.getMapReduceEndpoint().getClientSideReference().parallelMap(computationURI, selector, processor, police);
 			A identityAcc = initialAcc;
-			server_edp.getMapReduceEndpoint().getClientSideReference().parallelReduce(
-					computationURI, reductor, combinator, initialAcc, identityAcc, police, mapreduce_caller.copyWithSharable());
+			server_edp.getMapReduceEndpoint().getClientSideReference().reduce(
+					computationURI, reductor, combinator, initialAcc, identityAcc, mapreduce_caller.copyWithSharable());
 			A res = cfuture.get();
 			server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);
 			return (A) res;
@@ -223,19 +266,23 @@ public class FacadeAsyncComponent extends AbstractComponent {
 	}
 	
 	public void acceptResult(String computationURI, Serializable result) throws Exception {
-		globalLock.readLock().lock();
-		try {
 		CompletableFuture<ContentDataI> future = pendingResults.remove(computationURI);
         if (future != null) {
             future.complete((ContentDataI) result);
         } else {
             throw new Exception("No pending request found for computation URI: " + computationURI);
         }
-		}finally {
-			globalLock.readLock().unlock();
-		}
 	}
 	public void acceptResult(String computationURI, String emitterId, Serializable acc) throws Exception {
+		CompletableFuture<Serializable> future = 
+				(CompletableFuture<Serializable>) pendingResultsMapReduce.remove(computationURI);
+        if (future != null) {
+            future.complete((Serializable) acc);
+        } else {
+            throw new Exception("No pending request found for computation URI: " + computationURI);
+        }
+	}
+	public void acceptResult(String computationURI, String emitterId, Serializable acc, int troll) throws Exception {
 		globalLock.readLock().lock();
 		try {
 			

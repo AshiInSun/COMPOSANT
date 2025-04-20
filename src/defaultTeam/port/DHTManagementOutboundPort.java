@@ -31,8 +31,7 @@ public class DHTManagementOutboundPort extends DHTMapReduceOutboundPort implemen
 
 	@Override
 	public void initialiseContent(NodeContentI content) throws Exception {
-		// TODO Auto-generated method stub
-		
+		((DHTManagementCI) this.getConnector()).initialiseContent(content);
 	}
 
 	@Override
@@ -50,8 +49,7 @@ public class DHTManagementOutboundPort extends DHTMapReduceOutboundPort implemen
 	@Override
 	public <CI extends ResultReceptionCI> void split(String computationURI, LoadPolicyI loadPolicy,
 			EndPointI<CI> caller) throws Exception {
-		// TODO Auto-generated method stub
-		
+		((DHTManagementCI) this.getConnector()).split(computationURI, loadPolicy, caller);
 	}
 
 	@Override

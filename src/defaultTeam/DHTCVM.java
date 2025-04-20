@@ -6,13 +6,14 @@ import defaultTeam.endpoints.DHTServicesEndPoint;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.AbstractPort;
 import fr.sorbonne_u.components.cvm.AbstractCVM;
+import fr.sorbonne_u.components.pre.dcc.DynamicComponentCreator;
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 import fr.sorbonne_u.exceptions.VerboseException;
 
 public class DHTCVM extends AbstractCVM {
 
     private static final int NB_NODES = 8;
-    private static final int SIZE_NODES = 30;
+    private static final int SIZE_NODES = 150;
     private static final int NB_CLIENTS = 4;
     private static final int NB_CLIENTS_MR = 5;
     private static final int NB_CLIENTS_MR_MASSIV = 1;
@@ -46,7 +47,12 @@ public class DHTCVM extends AbstractCVM {
         for (int i = 0; i < NB_NODES; i++) {
             endPointsNode[i] = new BCMAsyncContentNodeCompositeEndPoint();
         }
-        
+        String uri_dcc = AbstractComponent.createComponent(
+        		DynamicComponentCreator.class.getCanonicalName(),
+        		new Object[]{
+        				AbstractCVM.getThisJVMURI()
+        		}
+    		);
      // Création de la façade
         String uri_facade_component = AbstractComponent.createComponent(
                 FacadeAsyncComponent.class.getCanonicalName(),
@@ -66,8 +72,7 @@ public class DHTCVM extends AbstractCVM {
                             ((i + 1) * SIZE_NODES) - 1,
                             dht_node.copyWithSharable(),
                             endPointsNode[i].copyWithSharable(),
-                            endPointsNode[(i + 1) % NB_NODES].copyWithSharable(),
-                            NB_NODES
+                            endPointsNode[(i + 1) % NB_NODES].copyWithSharable()
                     });
             urinode[i] = uri;
             this.toggleTracing(uri);

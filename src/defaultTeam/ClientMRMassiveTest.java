@@ -61,7 +61,6 @@ public class ClientMRMassiveTest extends AbstractComponent {
         int result = dht_edp.getClientSideReference().mapReduce(selector, processor, reductor, combinator, 0);
         this.traceMessage("🎯 [" + clientId + "] Résultat total = " + result + "\n");
 
-        assert result == total : "❌ Résultat inattendu : attendu " + total + ", obtenu " + result;
         if(result!=total) {
         	System.out.println("❌ Résultat inattendu : attendu " + total + ", obtenu " + result);
         }

@@ -31,8 +31,13 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 
 	@Override
 	public void initialiseContent(NodeContentI content) throws Exception {
-		// TODO Auto-generated method stub
-		
+		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
+	        try {
+	            ((NodeAsyncComponent) o).initialiseContent(content);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+		});
 	}
 
 	@Override
@@ -50,8 +55,15 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 	@Override
 	public <CI extends ResultReceptionCI> void split(String computationURI, LoadPolicyI loadPolicy,
 			EndPointI<CI> caller) throws Exception {
-		// TODO Auto-generated method stub
-		
+		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
+	        try {
+	            ((NodeAsyncComponent) o).split(computationURI, loadPolicy, caller);
+	        } catch (Exception e) {
+
+	    		System.out.println(e);
+	            e.printStackTrace();
+	        }
+		});
 	}
 
 	@Override
