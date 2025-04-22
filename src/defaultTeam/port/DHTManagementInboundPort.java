@@ -42,14 +42,26 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 
 	@Override
 	public NodeStateI getCurrentState() throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+		return this.getOwner().handleRequest(MAP_REDUCE_HANDLER_URI, o -> {
+	        try {
+	            return ((NodeAsyncComponent) o).getCurrentState();
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+			return null;
+		});
 	}
 
 	@Override
 	public NodeContentI suppressNode() throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+		return this.getOwner().handleRequest(MAP_REDUCE_HANDLER_URI, o -> {
+	        try {
+	            return ((NodeAsyncComponent) o).suppressNode();
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+			return null;
+		});
 	}
 
 	@Override
@@ -69,8 +81,16 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 	@Override
 	public <CI extends ResultReceptionCI> void merge(String computationURI, LoadPolicyI loadPolicy,
 			EndPointI<CI> caller) throws Exception {
-		// TODO Auto-generated method stub
-		
+		System.out.println("APPEL");
+		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
+	        try {
+	            ((NodeAsyncComponent) o).merge(computationURI, loadPolicy, caller);
+	        } catch (Exception e) {
+
+	    		System.out.println(e);
+	            e.printStackTrace();
+	        }
+		});
 	}
 
 	@Override

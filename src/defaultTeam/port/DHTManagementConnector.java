@@ -30,14 +30,12 @@ public class DHTManagementConnector extends DHTMapReduceConnector implements DHT
 
 	@Override
 	public NodeStateI getCurrentState() throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+		return ((DHTManagementCI) this.offering).getCurrentState();
 	}
 
 	@Override
 	public NodeContentI suppressNode() throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+		return ((DHTManagementCI) this.offering).suppressNode();
 	}
 
 	@Override
@@ -49,8 +47,7 @@ public class DHTManagementConnector extends DHTMapReduceConnector implements DHT
 	@Override
 	public <CI extends ResultReceptionCI> void merge(String computationURI, LoadPolicyI loadPolicy,
 			EndPointI<CI> caller) throws Exception {
-		// TODO Auto-generated method stub
-		
+		((DHTManagementCI) this.offering).merge(computationURI, loadPolicy, caller);
 	}
 
 	@Override

@@ -36,14 +36,12 @@ public class DHTManagementOutboundPort extends DHTMapReduceOutboundPort implemen
 
 	@Override
 	public NodeStateI getCurrentState() throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+		return ((DHTManagementCI) this.getConnector()).getCurrentState();
 	}
 
 	@Override
 	public NodeContentI suppressNode() throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+		return ((DHTManagementCI) this.getConnector()).suppressNode();
 	}
 
 	@Override
@@ -55,8 +53,7 @@ public class DHTManagementOutboundPort extends DHTMapReduceOutboundPort implemen
 	@Override
 	public <CI extends ResultReceptionCI> void merge(String computationURI, LoadPolicyI loadPolicy,
 			EndPointI<CI> caller) throws Exception {
-		// TODO Auto-generated method stub
-		
+		((DHTManagementCI) this.getConnector()).merge(computationURI, loadPolicy, caller);
 	}
 
 	@Override
