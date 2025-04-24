@@ -12,7 +12,7 @@ import fr.sorbonne_u.exceptions.VerboseException;
 
 public class DHTCVM extends AbstractCVM {
 
-    private static final int NB_NODES = 32;
+    private static final int NB_NODES = 10;
     private static final int SIZE_NODES = 100;
     private static final int NB_CLIENTS = 4;
     private static final int NB_CLIENTS_MR = 5;

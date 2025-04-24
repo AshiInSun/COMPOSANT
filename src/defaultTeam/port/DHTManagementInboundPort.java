@@ -23,7 +23,7 @@ import java.io.Serializable;
 
 public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements DHTManagementCI {
     private static final long serialVersionUID = 1L;
-    public static final String MAP_REDUCE_HANDLER_URI = "mrah";
+    public static final String MANAGEMENT_HANDLER_URI = "mah";
 
     public DHTManagementInboundPort(String uri, ComponentI owner) throws Exception {
         super(uri, owner);
@@ -31,7 +31,7 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 
 	@Override
 	public void initialiseContent(NodeContentI content) throws Exception {
-		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
+		this.getOwner().runTask(MANAGEMENT_HANDLER_URI, o -> {
 	        try {
 	            ((NodeAsyncComponent) o).initialiseContent(content);
 	        } catch (Exception e) {
@@ -42,7 +42,7 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 
 	@Override
 	public NodeStateI getCurrentState() throws Exception {
-		return this.getOwner().handleRequest(MAP_REDUCE_HANDLER_URI, o -> {
+		return this.getOwner().handleRequest(MANAGEMENT_HANDLER_URI, o -> {
 	        try {
 	            return ((NodeAsyncComponent) o).getCurrentState();
 	        } catch (Exception e) {
@@ -54,7 +54,7 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 
 	@Override
 	public NodeContentI suppressNode() throws Exception {
-		return this.getOwner().handleRequest(MAP_REDUCE_HANDLER_URI, o -> {
+		return this.getOwner().handleRequest(MANAGEMENT_HANDLER_URI, o -> {
 	        try {
 	            return ((NodeAsyncComponent) o).suppressNode();
 	        } catch (Exception e) {
@@ -67,7 +67,7 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 	@Override
 	public <CI extends ResultReceptionCI> void split(String computationURI, LoadPolicyI loadPolicy,
 			EndPointI<CI> caller) throws Exception {
-		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
+		this.getOwner().runTask(MANAGEMENT_HANDLER_URI, o -> {
 	        try {
 	            ((NodeAsyncComponent) o).split(computationURI, loadPolicy, caller);
 	        } catch (Exception e) {
@@ -82,7 +82,7 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 	public <CI extends ResultReceptionCI> void merge(String computationURI, LoadPolicyI loadPolicy,
 			EndPointI<CI> caller) throws Exception {
 		System.out.println("APPEL");
-		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
+		this.getOwner().runTask(MANAGEMENT_HANDLER_URI, o -> {
 	        try {
 	            ((NodeAsyncComponent) o).merge(computationURI, loadPolicy, caller);
 	        } catch (Exception e) {
@@ -95,7 +95,7 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 
 	@Override
 	public void computeChords(String computationURI, int numberOfChords) throws Exception {
-		this.getOwner().runTask(MAP_REDUCE_HANDLER_URI, o -> {
+		this.getOwner().runTask(MANAGEMENT_HANDLER_URI, o -> {
 	        try {
 	            ((NodeAsyncComponent) o).computeChords(computationURI, numberOfChords);
 	        } catch (Exception e) {
@@ -107,7 +107,7 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 	@Override
 	public SerializablePair<ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>, Integer> getChordInfo(
 			int offset) throws Exception {
-		return this.getOwner().handleRequest(MAP_REDUCE_HANDLER_URI, o -> {
+		return this.getOwner().handleRequest(MANAGEMENT_HANDLER_URI, o -> {
 	        try {
 	            return ((NodeAsyncComponent) o).getChordInfo(offset);
 	        } catch (Exception e) {

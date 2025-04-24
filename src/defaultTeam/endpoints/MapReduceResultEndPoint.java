@@ -14,6 +14,9 @@ public class MapReduceResultEndPoint extends BCMEndPoint<MapReduceResultReceptio
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	public MapReduceResultEndPoint() {
+		super(MapReduceResultReceptionCI.class, MapReduceResultReceptionCI.class);
+    }
 
 	public MapReduceResultEndPoint(String uri) {
 		super(MapReduceResultReceptionCI.class, MapReduceResultReceptionCI.class, uri);

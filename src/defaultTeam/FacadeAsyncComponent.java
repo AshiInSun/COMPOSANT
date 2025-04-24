@@ -123,6 +123,25 @@ public class FacadeAsyncComponent extends AbstractComponent {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+        this.runTask(MANAGEMENT_HANDLER_URI, o -> {
+            while (true) {
+            	 try {
+            		 
+                     Thread.sleep(1000); // 5 secondes
+                 } catch (InterruptedException e) {
+                     this.traceMessage("⏹ Maintenance interrompue\n");
+                     break;
+                 }
+            	 
+                try {
+                    String uri = URIGenerator.generateURI("AUTO_MAINT");
+                    this.ComputeSplit(defaultPolicy, caller, NB_NODES);
+                } catch (Exception e) {
+                    this.traceMessage("⚠️ Erreur pendant maintenance : " + e.getMessage() + "\n");
+                    e.printStackTrace();
+                }    
+            }
+        });
     }
 
     @Override
@@ -144,7 +163,6 @@ public class FacadeAsyncComponent extends AbstractComponent {
     	String computationURI_chord = URIGenerator.generateURI();
     	this.traceMessage("ComputeChordFromFacade...\n");
         server_edp.getDHTManagementEndpoint().getClientSideReference().computeChords(computationURI_chord, numberOfChords);
-        Thread.sleep(500);
         this.traceMessage("ComputeChordEnded...\n");
 	}
     public void split(String computationURI, LoadPolicyI loadPolicy, EndPointI<ResultReceptionCI> caller) throws Exception {
@@ -165,25 +183,19 @@ public class FacadeAsyncComponent extends AbstractComponent {
 		server_edp.getDHTManagementEndpoint().getClientSideReference()
 			.merge(computationURI_merge, defaultPolicy, caller.copyWithSharable());
 		this.traceMessage("Getting merge future\n");
-		//ContentDataI res = cfuture.get();
+		ContentDataI res = cfuture.get();
         this.traceMessage("Merge Ended\n");
 	}
     public void ComputeSplit(LoadPolicyI loadPolicy, EndPointI<ResultReceptionCI> caller, int numberOfChords) throws Exception{
     	try {
 			globalLock.writeLock().lock();
-			if(globalPutCounter >= GLOBAL_SPLIT_THRESHOLD) {
-				globalPutCounter = 0;
-				//traceMessage("⛏ Déclenchement du split en tâche de fond...\n");
-				//this.split("", loadPolicy, caller);
-				//traceMessage("⛏ tache de fond fini split...\n");
-				traceMessage("⛏ Déclenchement du merge en tâche de fond...\n");
-				this.merge("", loadPolicy, caller);
-				Thread.sleep(1000);
-				traceMessage("⛏ tache de fond fini merge...\n");
-				this.computeChords("", numberOfChords);
-			}else {
-				traceMessage("⛏ already did\n");
-			}
+			traceMessage("⛏ Déclenchement du split en tâche de fond...\n");
+			this.split("", loadPolicy, caller);
+			//traceMessage("⛏ tache de fond fini split...\n");
+			traceMessage("⛏ Déclenchement du merge en tâche de fond...\n");
+			//this.merge("", loadPolicy, caller);	
+			traceMessage("⛏ tache de fond fini merge...\n");
+			this.computeChords("", numberOfChords);
 		} finally {
 			globalLock.writeLock().unlock();
 		}
@@ -192,7 +204,6 @@ public class FacadeAsyncComponent extends AbstractComponent {
 	public <CI extends ResultReceptionCI>ContentDataI get(ContentKeyI key) throws Exception {
 		globalLock.readLock().lock();
 		try {
-			this.traceMessage("Try to get\n");
 			String computationURI = URIGenerator.generateURI();
 			CompletableFuture<ContentDataI> cfuture = new CompletableFuture<>();
 			pendingResults.put(computationURI, cfuture);
@@ -200,7 +211,6 @@ public class FacadeAsyncComponent extends AbstractComponent {
 			
 			ContentDataI res = cfuture.get();
 			server_edp.getContentAccessEndpoint().getClientSideReference().clearComputation(computationURI);
-			this.traceMessage("I got the future :"+res+"\n");
 			return res;
 		}finally {
 			globalLock.readLock().unlock();
@@ -221,15 +231,6 @@ public class FacadeAsyncComponent extends AbstractComponent {
 			return res;
 		} finally {
 			globalLock.readLock().unlock();
-			if (globalPutCounter >= GLOBAL_SPLIT_THRESHOLD ) {
-				this.runTask(MANAGEMENT_HANDLER_URI, o -> {
-				    try {
-				    	this.ComputeSplit(defaultPolicy, caller, NB_NODES);
-				    } catch (Exception e) {
-				        e.printStackTrace();
-				    }
-				});
-			}
 		}
 	}
 
@@ -257,6 +258,7 @@ public class FacadeAsyncComponent extends AbstractComponent {
 			A initialAcc) throws Exception {
 				
 		globalLock.readLock().lock();
+		System.out.println("MapReduce - a l'interieur du verrou");
 		
 		try {
 			if (selector == null || processor == null || reductor == null || combinator == null || initialAcc == null ) 
@@ -277,9 +279,9 @@ public class FacadeAsyncComponent extends AbstractComponent {
 			A identityAcc = initialAcc;
 			server_edp.getMapReduceEndpoint().getClientSideReference().reduce(
 					computationURI, reductor, combinator, initialAcc, identityAcc, mapreduce_caller.copyWithSharable());
-			System.out.println("Map reduce FACADE");
+			System.out.println("MapReduce - avant get sur Future");
 			A res = cfuture.get();
-			System.out.println("Map reduce FACADE");
+			System.out.println("MapReduce - après get sur Future");
 			server_edp.getMapReduceEndpoint().getClientSideReference().clearMapReduceComputation(computationURI);
 			return (A) res;
 		}finally {
@@ -308,7 +310,7 @@ public class FacadeAsyncComponent extends AbstractComponent {
 	}
 	public void acceptResult(String computationURI, String emitterId, Serializable acc, int troll) throws Exception {
 		
-
+			System.out.println("Accept result MapReduce");
 			List<Serializable> partials = partialResultsMapReduce.get(computationURI);
 	        if (partials == null) {
 	            throw new Exception("No partial result list found for computation URI: " + computationURI);

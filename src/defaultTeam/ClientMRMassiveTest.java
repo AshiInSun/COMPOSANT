@@ -42,6 +42,11 @@ public class ClientMRMassiveTest extends AbstractComponent {
         int total = 0;
         int nombreInserts = 1000;  // volume important
         for (int i = 0; i < nombreInserts; i++) {
+        	if(i%144==0) {
+        		System.out.println("zzz");
+        		Thread.sleep(1000);
+        		System.out.println("Link ! Wake up !");
+        	}
             String nom = clientId + "-Bulk-" + i;
             int age = 20 + (i % 50); // pour avoir une plage variée mais bornée
             total += age;
