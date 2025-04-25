@@ -81,7 +81,6 @@ public class DHTManagementInboundPort extends DHTMapReduceInboundPort implements
 	@Override
 	public <CI extends ResultReceptionCI> void merge(String computationURI, LoadPolicyI loadPolicy,
 			EndPointI<CI> caller) throws Exception {
-		System.out.println("APPEL");
 		this.getOwner().runTask(MANAGEMENT_HANDLER_URI, o -> {
 	        try {
 	            ((NodeAsyncComponent) o).merge(computationURI, loadPolicy, caller);

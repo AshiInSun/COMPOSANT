@@ -18,7 +18,7 @@ public class DHTCVM extends AbstractCVM {
     private static final int NB_CLIENTS_MR = 5;
     private static final int NB_CLIENTS_MR_MASSIV = 1;
  // Flag de test
-    boolean flag = false;
+    boolean flag = true;
     boolean flagInsert = false;
     boolean flagCA = false;
     boolean flagMR = false;

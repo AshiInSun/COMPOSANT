@@ -191,9 +191,9 @@ public class FacadeAsyncComponent extends AbstractComponent {
 			globalLock.writeLock().lock();
 			traceMessage("⛏ Déclenchement du split en tâche de fond...\n");
 			this.split("", loadPolicy, caller);
-			//traceMessage("⛏ tache de fond fini split...\n");
+			traceMessage("⛏ tache de fond fini split...\n");
 			traceMessage("⛏ Déclenchement du merge en tâche de fond...\n");
-			//this.merge("", loadPolicy, caller);	
+			this.merge("", loadPolicy, caller);	
 			traceMessage("⛏ tache de fond fini merge...\n");
 			this.computeChords("", numberOfChords);
 		} finally {
