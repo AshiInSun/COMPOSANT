@@ -1,5 +1,9 @@
 package defaultTeam;
 
+import defaultTeam.clients.ClientCAtest;
+import defaultTeam.clients.ClientInserteur;
+import defaultTeam.clients.ClientMRMassiveTest;
+import defaultTeam.clients.ClientMRtest;
 import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
 
 import defaultTeam.endpoints.DHTServicesEndPoint;

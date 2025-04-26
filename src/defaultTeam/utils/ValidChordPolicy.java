@@ -1,4 +1,4 @@
-package defaultTeam;
+package defaultTeam.utils;
 
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.ParallelMapReduceI.ParallelismPolicyI;
 
@@ -22,6 +22,7 @@ public class ValidChordPolicy implements ParallelismPolicyI {
     }
 
     public boolean removeEndpointCallUri(String uri) {
-        return alreadyCalledUris.add(uri); // retourne true si l'URI n'était pas encore appelé
+        return true;
+    	//return alreadyCalledUris.add(uri); // retourne true si l'URI n'était pas encore appelé
     }
 }

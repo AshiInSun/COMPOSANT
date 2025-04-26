@@ -1,4 +1,4 @@
-package defaultTeam;
+package defaultTeam.utils;
 
 import fr.sorbonne_u.cps.dht_mapreduce.interfaces.management.LoadPolicyI;
 

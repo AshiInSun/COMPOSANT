@@ -14,6 +14,9 @@ import defaultTeam.endpoints.ConcreteBCMEndPoint;
 import defaultTeam.endpoints.DHTServicesEndPoint;
 import defaultTeam.endpoints.MapReduceResultEndPoint;
 import defaultTeam.endpoints.ResultEndPoint;
+import defaultTeam.utils.AllNodesPolicy;
+import defaultTeam.utils.LoadPolicy;
+import defaultTeam.utils.ValidChordPolicy;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.OfferedInterfaces;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
@@ -275,6 +278,9 @@ public class FacadeAsyncComponent extends AbstractComponent {
 			partialResultsMapReduce.put(computationURI, new ArrayList<>());
 			
 			AllNodesPolicy police = new AllNodesPolicy();
+			List<Integer> list = new ArrayList<>();
+			list.add(1);
+			ValidChordPolicy police_v = new ValidChordPolicy(list);
 			server_edp.getMapReduceEndpoint().getClientSideReference().parallelMap(computationURI, selector, processor, police);
 			A identityAcc = initialAcc;
 			server_edp.getMapReduceEndpoint().getClientSideReference().reduce(

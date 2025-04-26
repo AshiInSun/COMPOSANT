@@ -1,4 +1,4 @@
-package defaultTeam;
+package defaultTeam.clients;
 
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
@@ -14,6 +14,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.mapreduce.SelectorI;
 
 import java.util.concurrent.CountDownLatch;
 
+import defaultTeam.ContentKey;
+import defaultTeam.Personne;
 import defaultTeam.endpoints.ConcreteBCMEndPoint;
 import defaultTeam.endpoints.DHTServicesEndPoint;
 

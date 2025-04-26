@@ -53,11 +53,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.Iterator;
 
-
 import defaultTeam.endpoints.BCMAsyncContentNodeCompositeEndPoint;
 import defaultTeam.endpoints.BCMDynamicComponentCreationEndPoint;
 import defaultTeam.endpoints.MapReduceResultEndPoint;
 import defaultTeam.old.BCMContentNodeCompositeEndPoint;
+import defaultTeam.utils.AllNodesPolicy;
+import defaultTeam.utils.NodeContentCI;
+import defaultTeam.utils.NodeState;
+import defaultTeam.utils.ValidChordPolicy;
 
 @OfferedInterfaces(offered = {ContentAccessSyncCI.class, MapReduceSyncCI.class, 
         ContentAccessCI.class, MapReduceCI.class, DHTServicesCI.class, 
@@ -95,7 +98,7 @@ public class NodeAsyncComponent extends AbstractComponent {
     private final Map<String, List<Object>> mapResults;
     protected final ConcurrentHashMap<String, CompletableFuture<Object>> isMapDone
     	= new ConcurrentHashMap<>();
-    protected final ConcurrentHashMap<String, CompletableFuture<Object>> futurReduceResultMap
+    protected final ConcurrentHashMap<String, ArrayList<CompletableFuture<Object>>> futurReduceResultMap
 	= new ConcurrentHashMap<>();
     private final java.util.concurrent.Semaphore endpointLock = new java.util.concurrent.Semaphore(1);
     //en mode fair: pour éviter la famine des op de management 
@@ -127,7 +130,7 @@ public class NodeAsyncComponent extends AbstractComponent {
         this.visitedReduce = new HashMap<>();
         this.client_edp = client_edp;
         this.server_edp = server_edp;
-        //mapreduce_caller.initialiseServerSide(this);
+        mapreduce_caller.initialiseServerSide(this);
         dcc_op.publishPort();
         String dccInboundURI =
         	    AbstractCVM.getThisJVMURI() + AbstractCVM.DCC_INBOUNDPORT_URI_SUFFIX;
@@ -287,6 +290,26 @@ public class NodeAsyncComponent extends AbstractComponent {
 	public NodeStateI getCurrentState() throws Exception {
 		return (NodeStateI) new NodeState(this.table, this.interval);
 	}
+	
+	public <A extends Serializable> void acceptResult(String computationURI, String senderURI, A result) throws Exception {
+
+	    globalLock.readLock().lock();
+	    try {
+	        @SuppressWarnings("unchecked")
+	        ArrayList<CompletableFuture<Object>> futures = futurReduceResultMap.get(computationURI);
+	        if (futures != null && !futures.isEmpty()) {
+	            CompletableFuture<Object> future = futures.remove(0);
+	            if (future != null) {
+	                future.complete(result); // ici result est ce que tu veux renvoyer
+	            }
+	        } else {
+	            throw new IllegalStateException("No pending future for computation " + computationURI + " from sender " + senderURI);
+	        }
+	    } finally {
+	        globalLock.readLock().unlock();
+	    }
+	}
+
 	
 	public <CI extends ResultReceptionCI> void split(String computationURI, LoadPolicyI loadPolicy, EndPointI<CI> caller) throws Exception {
 	    synchronized (visited) {
@@ -625,6 +648,15 @@ public class NodeAsyncComponent extends AbstractComponent {
 		globalLock.readLock().lock();
 		System.out.println("reduce in");
 		try {
+			if (visitedReduce.containsKey(computationURI)) {
+				caller.initialiseClientSide(this);
+				this.traceMessage("- Appel acceptResult\n");
+				caller.getClientSideReference().acceptResult(computationURI, getURI(), currentAcc);	
+				System.out.println("accept result from reduce");
+				caller.cleanUpClientSide();
+				return;
+			}
+			visitedReduce.put(computationURI, true);
 		this.traceMessage("Reduce waiting for map...\n");	
 		CompletableFuture<Object> cfuture = new CompletableFuture<>();
 		isMapDone.putIfAbsent(computationURI, cfuture);
@@ -633,15 +665,7 @@ public class NodeAsyncComponent extends AbstractComponent {
 		System.out.println("reduce après get");
 		this.traceMessage("Execute reduce...\n");
 
-		if (visitedReduce.containsKey(computationURI)) {
-			caller.initialiseClientSide(this);
-			this.traceMessage("- Appel acceptResult\n");
-			caller.getClientSideReference().acceptResult(computationURI, getURI(), currentAcc);	
-			System.out.println("accept result from reduce");
-			caller.cleanUpClientSide();
-			return;
-		}
-		visitedReduce.put(computationURI, true);
+		
 		
 		List<Object> values = mapResults.get(computationURI);
         if (values == null)
@@ -714,68 +738,6 @@ public class NodeAsyncComponent extends AbstractComponent {
 		}
         
 	}
-	public <A extends Serializable, R, I extends MapReduceResultReceptionCI> void parallelReducetest(String computationURI,
-			ReductorI<A, R> reductor, CombinatorI<A> combinator, A identityAcc, A currentAcc,
-			ParallelismPolicyI parallelismPolicy, EndPointI<I> caller) throws Exception {
-		assert computationURI != null && !computationURI.isEmpty() && reductor != null && combinator != null && caller != null :
-    		"Parametre(s) de reduce non valides";
-		CompletableFuture<Object> cfuture = new CompletableFuture<>();
-		isMapDone.putIfAbsent(computationURI, cfuture);
-		cfuture = isMapDone.get(computationURI);
-		cfuture.get();
-		synchronized (visitedReduce) {
-	        if (visitedReduce.containsKey(computationURI)) {
-	        	caller.getClientSideReference().acceptResult(computationURI, uri, 0);
-	        }
-	        visitedReduce.put(computationURI, true);
-	    }
-		
-		List<Object> values = mapResults.get(computationURI);
-        if (values == null)
-            return;
-
-        Stream<R> stream = values.stream().map(d -> (R) d);
-        if (mapResults == null)
-			throw new IllegalStateException("Pas de resultats trouvé pour computationUri: " + computationURI);
-		A reduced = stream.reduce(currentAcc, reductor, combinator);
-		
-		
-		List<ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>> children = new ArrayList<>();
-	    MapReduceResultEndPoint mapreduce_caller = new MapReduceResultEndPoint(null);
-	    mapreduce_caller.initialiseServerSide(this);
-	    
-		BCMAsyncContentNodeCompositeEndPoint temp = null;
-		for(SerializablePair<
-                ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>,
-                Integer> fingerInfo : fingerTable) {
-			if (fingerInfo == null) continue;
-			children.add(fingerInfo.first());
-            temp = (BCMAsyncContentNodeCompositeEndPoint) fingerInfo.first();
-            temp.getMapReduceEndpoint().getClientSideReference().parallelReduce(computationURI, reductor, combinator, identityAcc, identityAcc, parallelismPolicy, caller.copyWithSharable());
-		}
-		
-		if(temp==null) {
-			temp=server_edp;
-			temp.getMapReduceEndpoint().getClientSideReference().parallelReduce(computationURI, reductor, combinator, identityAcc, identityAcc, parallelismPolicy, caller.copyWithSharable());
-		}
-		if (children.isEmpty()) {
-	        server_edp.getMapReduceEndpoint().getClientSideReference().parallelReduce(
-	            computationURI, reductor, combinator, identityAcc, identityAcc, parallelismPolicy, mapreduce_caller
-	        );
-	        children.add(server_edp);
-	    }
-		parallelChildrenCount.put(computationURI, children.size());
-		
-		CompletableFuture<Void> wait = new CompletableFuture<>();
-	    waitingForChildren.put(computationURI, wait);
-	    wait.get();
-	    List<Serializable> accList = partialResultsMapReduce.get(computationURI);
-	    if (accList == null) throw new IllegalStateException("Pas d'accumulateurs reçus.");
-	    //ahhhhhhhhh
-	    //Serializable finalAcc = accList.stream()
-	    		//.reduce(identityAcc, reductor, combinator);
-	}
-	
 	
 	public <A extends Serializable, R, I extends MapReduceResultReceptionCI> void parallelReduce(
 		    String computationURI,
@@ -788,35 +750,42 @@ public class NodeAsyncComponent extends AbstractComponent {
 
 		    if(visitedReduce.containsKey(computationURI)) return;
 		    visitedReduce.put(computationURI, true);
-		    
-		     
+		         
 	        globalLock.readLock().lock();
 	        try {
+	        	
 	        	ArrayList<CompletableFuture<Object>> futurList = new ArrayList<>();
 
 	        	CompletableFuture<Object> future = new CompletableFuture<>();
 	       	    isMapDone.putIfAbsent(computationURI, future);
-	       	    
-	       	    // Attend que le résultat map soit dispo
+	       	    future = isMapDone.get(computationURI);
+	       	    future.get();
+
 	       	    @SuppressWarnings("unchecked")
 	       	    Stream<R> stream = (Stream<R>) mapResults.get(computationURI);
 	       	    A localResult = stream.reduce(currentAcc, reductor, combinator);
-
-	            for (int ind : ((ValidChordPolicy) parallelismPolicy).getChordsIndices()) {
+	       	    int ind = 0;
+	            //for (int ind : ((ValidChordPolicy) parallelismPolicy).getChordsIndices()) {
+            	for(SerializablePair<
+                        ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI>,
+                        Integer> fingerInfo : fingerTable) {
+            		if(fingerInfo==null) continue;
+            		ind++;
 	                if (chordValide(ind)) {
-	                    ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI> edp = fingerTable.get(ind).first();
+	                    //ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI> edp = fingerTable.get(ind).first();
+	                    ContentNodeCompositeEndPointI<ContentAccessCI, ParallelMapReduceCI, DHTManagementCI> edp = fingerInfo.first();
 	                    String uri = mapreduce_caller.getInboundPortURI();
 	                    boolean a =(((ValidChordPolicy) parallelismPolicy).removeEndpointCallUri(uri));
 	                    if (a) {
 	                        CompletableFuture<Object> futureReduce = new CompletableFuture<>();
 	                        futurList.add(futureReduce);
-	                        futurReduceResultMap.putIfAbsent(computationURI + uri, futureReduce);
+	                        futurReduceResultMap.computeIfAbsent(computationURI, k -> new ArrayList<>()).add(futureReduce);
 	                        ((ValidChordPolicy)parallelismPolicy).removeEndpointCallUri(uri);
 
 	                        edp.getMapReduceEndpoint().getClientSideReference()
 	                           .parallelReduce(computationURI, reductor, combinator,
 	                                           identityAcc, identityAcc,  
-	                                           parallelismPolicy, caller);
+	                                           parallelismPolicy, mapreduce_caller.copyWithSharable());
 	                       
 	                    }
 	                }

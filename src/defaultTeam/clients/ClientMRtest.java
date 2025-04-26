@@ -1,5 +1,7 @@
-package defaultTeam;
+package defaultTeam.clients;
 
+import defaultTeam.ContentKey;
+import defaultTeam.Personne;
 import defaultTeam.endpoints.DHTServicesEndPoint;
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;

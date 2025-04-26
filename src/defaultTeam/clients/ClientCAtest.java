@@ -1,4 +1,4 @@
-package defaultTeam;
+package defaultTeam.clients;
 
 import fr.sorbonne_u.components.AbstractComponent;
 import fr.sorbonne_u.components.annotations.RequiredInterfaces;
@@ -11,6 +11,8 @@ import fr.sorbonne_u.cps.dht_mapreduce.interfaces.frontend.DHTServicesCI;
 import java.util.ArrayList;
 import java.util.List;
 
+import defaultTeam.ContentKey;
+import defaultTeam.Personne;
 import defaultTeam.endpoints.DHTServicesEndPoint;
 
 @RequiredInterfaces(required = {DHTServicesCI.class})
