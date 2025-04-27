@@ -29,6 +29,7 @@ public class MapReduceResultReceptionInboundPort  extends AbstractInboundPort im
 		    try {
 		    	((FacadeAsyncComponent) this.owner).acceptResult(computationURI, emitterId, acc);
 		    } catch (Exception e) {
+		    	System.out.println(e);
 		        e.printStackTrace();
 		    }
 		});

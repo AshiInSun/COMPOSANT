@@ -46,7 +46,7 @@ public class ClientMRMassiveTest extends AbstractComponent {
         for (int i = 0; i < nombreInserts; i++) {
         	if(i%144==0) {
         		System.out.println("zzz");
-        		Thread.sleep(1000);
+        		Thread.sleep(250);
         		System.out.println("Link ! Wake up !");
         	}
             String nom = clientId + "-Bulk-" + i;
