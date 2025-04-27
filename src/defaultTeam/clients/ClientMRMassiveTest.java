@@ -64,7 +64,7 @@ public class ClientMRMassiveTest extends AbstractComponent {
         ProcessorI<Integer> processor = data -> (Integer) data.getValue("AGE");
         ReductorI<Integer, Integer> reductor = Integer::sum;
         CombinatorI<Integer> combinator = Integer::sum;
-
+   
         int result = dht_edp.getClientSideReference().mapReduce(selector, processor, reductor, combinator, 0);
         this.traceMessage("🎯 [" + clientId + "] Résultat total = " + result + "\n");
 

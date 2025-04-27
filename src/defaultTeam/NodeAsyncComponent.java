@@ -752,6 +752,7 @@ public class NodeAsyncComponent extends AbstractComponent {
 		    visitedReduce.put(computationURI, true);
 		         
 	        globalLock.readLock().lock();
+	        System.out.println("ENTERED REDUCE");
 	        try {
 	        	
 	        	ArrayList<CompletableFuture<Object>> futurList = new ArrayList<>();
